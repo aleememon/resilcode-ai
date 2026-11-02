@@ -1,0 +1,19 @@
+rules:
+  - id: catch-express-mysql2-sqli
+    message: "Untrusted user input flows directly into a database query. Use parameterized queries to prevent SQL Injection."
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    mode: taint
+    pattern-sources:
+      # Define where the malicious data comes from (the Source)
+      - pattern-either:
+          - pattern: req.query
+          - pattern: req.body
+          - pattern: req.params
+    pattern-sinks:
+      # Define where the data becomes dangerous (the Sink)
+      - patterns:
+          - pattern: $DB.query($SQL, ...)
+          - focus-metavariable: $SQL

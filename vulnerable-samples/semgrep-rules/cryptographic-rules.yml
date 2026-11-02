@@ -1,0 +1,44 @@
+rules:
+  - id: node-md5-weak-hashing
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    metadata:
+      name: Use of Broken Cryptographic Algorithm (MD5)
+      owasp: A04:2025 - Cryptographic Failures
+    message: >-
+      Detected the use of MD5, a weak and broken hashing algorithm. 
+      Use a secure, slow hashing function like bcrypt or Argon2 for passwords.
+    pattern: crypto.createHash('md5')
+
+  - id: node-math-random-insecure
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+    metadata:
+      name: Insecure Randomness (Math.random)
+      owasp: A04:2025 - Cryptographic Failures
+    message: >-
+      Math.random() is pseudo-random and entirely predictable. 
+      Do not use it to generate session tokens, salts, or keys. 
+      Use `crypto.randomBytes()` or `crypto.getRandomValues()` instead.
+    pattern: Math.random()
+
+  - id: node-hardcoded-secret
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    metadata:
+      name: Hardcoded Secret Key
+      owasp: A04:2025 - Cryptographic Failures
+    message: >-
+      A secret key appears to be hardcoded in the source code. 
+      Move secrets to environment variables (`process.env`) or a dedicated secret vault.
+    patterns:
+      - pattern: const $SECRET = "..."
+      - metavariable-regex:
+          metavariable: $SECRET
+          regex: (?i)(secret|token|key|pwd|password)
