@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AegisCode AI — Automated Security & 1-Click Repair for AI-Generated Code",
+  title: "ResilCode AI — Automated Security & 1-Click Repair for AI-Generated Code",
   description:
     "Scan React, Next.js, Express, and Python apps for OWASP vulnerabilities. Detect hardcoded secrets, injection vectors, and broken access controls—then patch them instantly with synthetic precision.",
-  applicationName: "AegisCode AI",
+  applicationName: "ResilCode AI",
   keywords: [
     "application security",
     "OWASP",
@@ -15,11 +15,11 @@ export const metadata: Metadata = {
     "developer security",
   ],
   openGraph: {
-    title: "AegisCode AI — Security for AI-Generated Code",
+    title: "ResilCode AI — Security for AI-Generated Code",
     description:
       "Automated security and 1-click repair for vibe-coded web apps. OWASP coverage with AST + LLM precision.",
     type: "website",
-    siteName: "AegisCode AI",
+    siteName: "ResilCode AI",
   },
 };
 

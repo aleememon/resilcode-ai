@@ -194,12 +194,12 @@ export function CyberDiff() {
         </div>
 
         {/* Center animated repair vector */}
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 hidden h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-surface-container-high shadow-[0_0_20px_#00f0ff] lg:flex">
+        {/* <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 hidden h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-surface-container-high shadow-[0_0_20px_#00f0ff] lg:flex">
           <Icon
             name="auto_fix_high"
             className="animate-pulse text-[24px] text-primary-container"
           />
-        </div>
+        </div> */}
 
         {/* Right: remediated code */}
         <div className="flex flex-col justify-between bg-surface-container-low/80 p-space-md md:p-space-lg lg:border-l lg:border-white/[0.06]">
@@ -263,7 +263,7 @@ export function CyberDiff() {
           <span className="flex h-2 w-2 shrink-0 rounded-full bg-primary-container" />
           <span className="font-label-code-md text-label-code-md font-medium text-primary">
             1-Click Patch Ready: Automatic branch{" "}
-            <code className="text-primary-container">aegis/patch-cwe89-cwe798</code> created
+            <code className="text-primary-container">resil/patch-cwe89-cwe798</code> created
           </span>
         </div>
         <div className="flex w-full items-center gap-space-xs sm:w-auto">
