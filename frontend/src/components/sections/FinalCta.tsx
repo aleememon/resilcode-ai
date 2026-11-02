@@ -14,10 +14,11 @@ export function FinalCta() {
       aria-labelledby="final-cta-title"
       className="snap-anchor page-container w-full py-space-3xl"
     >
-      <div className="relative flex flex-col items-center overflow-hidden rounded-xl border border-white/[0.08] bg-surface-container-low p-space-xl text-center shadow-banner md:p-space-3xl">
+      <div className="relative flex flex-col items-center overflow-hidden rounded-xl border border-glass-line/[0.08] bg-surface-container-low p-space-xl text-center shadow-banner md:p-space-3xl">
         {/* Radiant background light sources */}
         <div
           aria-hidden="true"
+          data-glow
           className="pointer-events-none absolute -top-32 left-1/2 h-[300px] w-[700px] -translate-x-1/2 bg-gradient-to-r from-primary-container/20 via-secondary-container/25 to-tertiary-container/15 blur-[90px]"
         />
 

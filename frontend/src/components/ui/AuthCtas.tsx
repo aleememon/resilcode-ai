@@ -27,7 +27,7 @@ export function AuthCtas({
       <div className="flex flex-1 flex-col items-center">
         <a
           href="/login"
-          className="group flex h-14 w-full items-center justify-center gap-space-sm rounded-lg bg-surface-container-high px-space-lg text-on-surface shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface-bright hover:shadow-cyan-glow active:translate-y-0"
+          className="group cta-shadow flex h-14 w-full items-center justify-center gap-space-sm rounded-lg bg-surface-container-high px-space-lg text-on-surface transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface-bright hover:shadow-cyan-glow active:translate-y-0"
         >
           <GoogleIcon className="h-5 w-5 shrink-0" />
           <span className="font-headline-sm text-headline-sm tracking-tight text-on-surface">
@@ -44,7 +44,7 @@ export function AuthCtas({
       <div className="flex flex-1 flex-col items-center">
         <a
           href="/login"
-          className="group h-14 w-full rounded-lg bg-gradient-to-r from-secondary-container via-surface-container-high to-secondary-container p-px shadow-purple-glow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-cyan-glow-lg active:translate-y-0"
+          className="cta-ring group h-14 w-full rounded-lg bg-gradient-to-r from-secondary-container via-surface-container-high to-secondary-container p-px shadow-purple-glow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-cyan-glow-lg active:translate-y-0"
         >
           <span className="flex h-full w-full items-center justify-center gap-space-sm rounded-[calc(0.5rem-1px)] bg-surface-container-lowest px-space-lg transition-colors group-hover:bg-surface-container-low">
             <GitHubIcon className="h-5 w-5 shrink-0 text-on-surface" />

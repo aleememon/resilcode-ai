@@ -15,7 +15,7 @@ export function CoverageRibbon() {
     <section
       id="owasp-scope"
       aria-labelledby="coverage-title"
-      className="snap-anchor w-full border-y border-white/[0.06] bg-surface-container-low py-space-xl"
+      className="snap-anchor w-full border-y border-glass-line/[0.08] bg-surface-container-low py-space-xl"
     >
       <div className="page-container flex flex-col items-center">
         <div className="mb-space-sm flex flex-wrap items-center justify-center gap-space-xs text-center">

@@ -9,7 +9,7 @@ export function SiteFooter() {
   return (
     <footer
       id="docs"
-      className="snap-anchor mt-space-3xl w-full border-t border-white/[0.06] bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.2)]"
+      className="snap-anchor mt-space-3xl w-full border-t border-glass-line/[0.08] bg-surface-container-lowest shadow-[0_-1px_8px_rgba(15,23,42,0.06)]"
     >
       <div className="mx-auto flex max-w-content flex-col gap-space-xl px-margin-mobile py-space-2xl sm:px-margin-tablet lg:px-margin-desktop">
         <div className="flex flex-col items-center justify-between gap-space-lg md:flex-row">

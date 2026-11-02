@@ -114,7 +114,7 @@ export function CyberDiff() {
       <div className="flex flex-wrap items-center justify-between gap-space-sm bg-surface-container px-space-md py-space-sm">
         <div className="flex flex-wrap items-center gap-space-sm">
           <div className="flex items-center gap-1.5" aria-hidden="true">
-            <span className="h-3 w-3 rounded-full bg-error-container" />
+            <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
             <span className="h-3 w-3 rounded-full bg-[#f59e0b]" />
             <span className="h-3 w-3 rounded-full bg-tertiary-container" />
           </div>
@@ -142,7 +142,7 @@ export function CyberDiff() {
         {/* Left: vulnerable code */}
         <div className="flex flex-col justify-between bg-surface-container-lowest/90 p-space-md md:p-space-lg">
           <div>
-            <div className="mb-space-md flex flex-wrap items-center justify-between gap-space-xs border-b border-white/[0.06] pb-space-sm">
+            <div className="mb-space-md flex flex-wrap items-center justify-between gap-space-xs border-b border-glass-line/[0.08] pb-space-sm">
               <div className="flex items-center gap-space-xs">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-error" />
                 <span className="font-headline-sm text-headline-sm text-error">
@@ -162,7 +162,7 @@ export function CyberDiff() {
               </CodeLine>
               <CodeLine n="39" tone="danger">
                 <span className="font-semibold text-secondary">const</span> OPENAI_KEY ={" "}
-                <span className="text-[#fca5a5]">{`"sk-live-93a84f09d812ebaa01"`}</span>;
+                <span className="text-code-danger">{`"sk-live-93a84f09d812ebaa01"`}</span>;
               </CodeLine>
               <CodeLine n="40" />
               <CodeLine n="41">
@@ -172,9 +172,9 @@ export function CyberDiff() {
               </CodeLine>
               <CodeLine n="42" tone="danger">
                 <span className="text-primary-fixed">await</span> db.query(
-                <span className="text-[#fca5a5]">{`"SELECT * FROM users WHERE id = '"`}</span>
+                <span className="text-code-danger">{`"SELECT * FROM users WHERE id = '"`}</span>
                 {" + req.query.id + "}
-                <span className="text-[#fca5a5]">{`"'"`}</span>);
+                <span className="text-code-danger">{`"'"`}</span>);
               </CodeLine>
               <CodeLine n="43">
                 return res.json({"{"} status:{" "}
@@ -202,9 +202,9 @@ export function CyberDiff() {
         </div> */}
 
         {/* Right: remediated code */}
-        <div className="flex flex-col justify-between bg-surface-container-low/80 p-space-md md:p-space-lg lg:border-l lg:border-white/[0.06]">
+        <div className="flex flex-col justify-between bg-surface-container-low/80 p-space-md md:p-space-lg lg:border-l lg:border-glass-line/[0.08]">
           <div>
-            <div className="mb-space-md flex flex-wrap items-center justify-between gap-space-xs border-b border-white/[0.06] pb-space-sm">
+            <div className="mb-space-md flex flex-wrap items-center justify-between gap-space-xs border-b border-glass-line/[0.08] pb-space-sm">
               <div className="flex items-center gap-space-xs">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-tertiary-container" />
                 <span className="font-headline-sm text-headline-sm text-tertiary-fixed">

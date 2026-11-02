@@ -2,7 +2,7 @@ import { Icon } from "@/components/ui/Icon";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 const CARD_CLASS =
-  "group flex flex-col justify-between rounded-xl border border-white/[0.08] bg-surface-container-low p-space-lg shadow-md transition-all duration-300 hover:border-primary-container/30 hover:bg-surface-container hover:shadow-photon";
+  "group flex flex-col justify-between rounded-xl border border-glass-line/[0.08] bg-surface-container-low p-space-lg shadow-md transition-all duration-300 hover:border-primary-container/30 hover:bg-surface-container hover:shadow-photon";
 
 export function HowItWorks() {
   return (

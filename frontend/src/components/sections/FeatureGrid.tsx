@@ -2,7 +2,7 @@ import { Icon } from "@/components/ui/Icon";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 const CARD_CLASS =
-  "group relative flex flex-col justify-between overflow-hidden rounded-xl border border-white/[0.08] bg-surface-container-low p-space-xl shadow-lg transition-all duration-300 hover:border-primary-container/30 hover:bg-surface-container hover:shadow-photon glass-sheen";
+  "group relative flex flex-col justify-between overflow-hidden rounded-xl border border-glass-line/[0.08] bg-surface-container-low p-space-xl shadow-lg transition-all duration-300 hover:border-primary-container/30 hover:bg-surface-container hover:shadow-photon glass-sheen";
 
 export function FeatureGrid() {
   return (
@@ -23,7 +23,7 @@ export function FeatureGrid() {
         <article className={CARD_CLASS}>
           <div
             aria-hidden="true"
-            className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-container/10 blur-3xl transition-all group-hover:bg-primary-container/20"
+            data-glow className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-container/10 blur-3xl transition-all group-hover:bg-primary-container/20"
           />
           <div>
             <div className="mb-space-md flex h-12 w-12 items-center justify-center rounded-lg bg-surface-container-high text-primary-container shadow-[0_0_16px_rgba(0,240,255,0.2)]">
@@ -40,7 +40,7 @@ export function FeatureGrid() {
           </div>
 
           <div className="flex flex-col gap-1 rounded-lg bg-surface-container-lowest p-space-md text-left font-label-code-md text-label-code-md">
-            <div className="mb-space-2xs flex flex-wrap items-center justify-between gap-space-2xs border-b border-white/[0.06] pb-space-xs">
+            <div className="mb-space-2xs flex flex-wrap items-center justify-between gap-space-2xs border-b border-glass-line/[0.08] pb-space-xs">
               <span className="font-label-code-sm text-outline">Diff Engine Preview</span>
               <span className="flex items-center gap-1 font-label-code-sm text-tertiary-fixed">
                 <span className="h-1.5 w-1.5 rounded-full bg-tertiary-container" />
@@ -60,7 +60,7 @@ export function FeatureGrid() {
         <article className={CARD_CLASS}>
           <div
             aria-hidden="true"
-            className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-secondary-container/15 blur-3xl transition-all group-hover:bg-secondary-container/25"
+            data-glow className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-secondary-container/15 blur-3xl transition-all group-hover:bg-secondary-container/25"
           />
           <div>
             <div className="mb-space-md flex h-12 w-12 items-center justify-center rounded-lg bg-surface-container-high text-secondary shadow-[0_0_16px_rgba(112,0,255,0.3)]">
@@ -107,7 +107,7 @@ export function FeatureGrid() {
         <article className={CARD_CLASS}>
           <div
             aria-hidden="true"
-            className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-container/10 blur-3xl transition-all group-hover:bg-primary-container/20"
+            data-glow className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-container/10 blur-3xl transition-all group-hover:bg-primary-container/20"
           />
           <div>
             <div className="mb-space-md flex h-12 w-12 items-center justify-center rounded-lg bg-surface-container-high text-primary-fixed shadow-[0_0_16px_rgba(0,240,255,0.2)]">
@@ -145,7 +145,7 @@ export function FeatureGrid() {
         <article className={CARD_CLASS}>
           <div
             aria-hidden="true"
-            className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-tertiary-container/10 blur-3xl transition-all group-hover:bg-tertiary-container/20"
+            data-glow className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-tertiary-container/10 blur-3xl transition-all group-hover:bg-tertiary-container/20"
           />
           <div>
             <div className="mb-space-md flex h-12 w-12 items-center justify-center rounded-lg bg-surface-container-high text-tertiary-fixed shadow-[0_0_16px_rgba(0,249,130,0.25)]">

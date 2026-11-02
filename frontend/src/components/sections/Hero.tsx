@@ -17,9 +17,9 @@ export function Hero() {
     >
       {/* Ambient photon fields */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[480px] w-[1000px] -translate-x-1/2 bg-gradient-to-b from-primary-container/15 via-secondary-container/20 to-transparent blur-[120px]" />
-        <div className="absolute right-[-10%] top-80 h-[500px] w-[500px] bg-primary-container/10 blur-[140px]" />
-        <div className="absolute left-[-10%] top-96 h-[460px] w-[460px] bg-secondary-container/15 blur-[140px]" />
+        <div className="absolute -top-40 left-1/2 h-[480px] w-[1000px] -translate-x-1/2 bg-gradient-to-b from-primary-container/15 via-secondary-container/20 to-transparent blur-[120px]" data-glow />
+        <div className="absolute right-[-10%] top-80 h-[500px] w-[500px] bg-primary-container/10 blur-[140px]" data-glow />
+        <div className="absolute left-[-10%] top-96 h-[460px] w-[460px] bg-secondary-container/15 blur-[140px]" data-glow />
       </div>
 
       <div className="page-container relative z-10 flex flex-col items-center pb-16 pt-8 text-center md:pb-24 md:pt-14">
