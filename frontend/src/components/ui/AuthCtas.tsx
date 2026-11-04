@@ -18,6 +18,7 @@ const signIn = (provider: "google" | "github") => {
   authClient.signIn.social({
     provider,
     callbackURL: "http://localhost:3000/code-ingestion",
+    errorCallbackURL: "http://localhost:3000/?auth=cancelled"
   });
 };
 

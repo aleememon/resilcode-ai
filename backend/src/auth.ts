@@ -18,4 +18,7 @@ export const auth = betterAuth({
       scope: ["repo", "user:email"], // "repo" is needed later for PRs
     },
   },
+  onAPIError: {
+    errorURL: `${process.env.FRONTEND_URL}/?auth=error`,
+  },
 });
