@@ -21,4 +21,7 @@ export const auth = betterAuth({
   onAPIError: {
     errorURL: `${process.env.FRONTEND_URL}/?auth=error`,
   },
+  account: {
+    encryptOAuthTokens: true,
+  },
 });
