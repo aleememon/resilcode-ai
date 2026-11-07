@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/Icon";
+import { uploadProject, type ScanResult } from "@/lib/scans";
 
 const MAX_BYTES = 150 * 1024 * 1024;
 
@@ -39,14 +40,19 @@ export function LocalUploadPanel() {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [queued, setQueued] = useState(false);
+  const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
+  const [result, setResult] = useState<ScanResult | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const chooseFiles = () => inputRef.current?.click();
+  const chooseFiles = () => {
+    if (status === "uploading") return;
+    inputRef.current?.click();
+  };
 
   const acceptFile = async (selected: File | undefined) => {
-    if (!selected) return;
-    setQueued(false);
+    if (!selected || status === "uploading") return;
+    setStatus("idle");
+    setResult(null);
     const problem = await validateZip(selected);
     if (problem) {
       setFile(null);
@@ -61,8 +67,27 @@ export function LocalUploadPanel() {
   const removeFile = () => {
     setFile(null);
     setError(null);
-    setQueued(false);
+    setStatus("idle");
+    setResult(null);
     if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const submit = async () => {
+    if (!file || status !== "idle") return;
+    setError(null);
+    setStatus("uploading");
+    try {
+      const data = await uploadProject(file);
+      setResult(data);
+      setStatus("done");
+    } catch (uploadError) {
+      setStatus("idle");
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Upload failed. Please try again.",
+      );
+    }
   };
 
   return (
@@ -98,7 +123,7 @@ export function LocalUploadPanel() {
         <input
           ref={inputRef}
           type="file"
-          accept=".zip,application/zip"
+          accept=".zip"
           className="hidden"
           onChange={(event) => acceptFile(event.target.files?.[0])}
         />
@@ -178,9 +203,43 @@ export function LocalUploadPanel() {
                       {formatSize(file.size)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-space-3xs font-label-code-sm text-label-code-sm text-tertiary-container">
-                    <Icon name="check_circle" className="text-[14px]" />
-                    <span>Valid .zip, ready to upload</span>
+                  <div className="flex flex-wrap items-center gap-space-3xs font-label-code-sm text-label-code-sm">
+                    {status === "done" && result ? (
+                      <>
+                        <Icon
+                          name="check_circle"
+                          className="text-[14px] text-tertiary-container"
+                        />
+                        <span className="text-tertiary-container">
+                          {result.fileCount.toLocaleString()}{" "}
+                          {result.fileCount === 1 ? "file" : "files"} ingested
+                        </span>
+                        <span className="text-outline">·</span>
+                        <span className="text-outline">
+                          {result.skipped.toLocaleString()} skipped
+                        </span>
+                      </>
+                    ) : status === "uploading" ? (
+                      <>
+                        <Icon
+                          name="sync"
+                          className="animate-spin text-[14px] text-primary"
+                        />
+                        <span className="text-primary">
+                          Uploading and extracting…
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Icon
+                          name="check_circle"
+                          className="text-[14px] text-tertiary-container"
+                        />
+                        <span className="text-tertiary-container">
+                          Valid .zip, ready to upload
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -188,8 +247,9 @@ export function LocalUploadPanel() {
               <button
                 type="button"
                 onClick={removeFile}
+                disabled={status === "uploading"}
                 aria-label="Remove attached file"
-                className="p-space-3xs text-outline transition-colors hover:text-error"
+                className="p-space-3xs text-outline transition-colors hover:text-error disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Icon name="close" className="text-[18px]" />
               </button>
@@ -201,15 +261,31 @@ export function LocalUploadPanel() {
       <div className="mt-space-xl">
         <button
           type="button"
-          disabled={!file || queued}
-          onClick={() => setQueued(true)} // replaced by a real upload call in the next step
+          disabled={!file || status !== "idle"}
+          aria-busy={status === "uploading"}
+          onClick={submit}
           className="flex w-full items-center justify-center gap-space-xs rounded-lg bg-primary-container px-space-lg py-space-sm font-headline-sm text-headline-sm font-bold text-on-primary shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all hover:bg-primary-fixed-dim disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Icon
-            name={queued ? "check_circle" : "radar"}
-            className="text-[20px]"
+            name={
+              status === "done"
+                ? "check_circle"
+                : status === "uploading"
+                  ? "sync"
+                  : "radar"
+            }
+            className={cn(
+              "text-[20px]",
+              status === "uploading" && "animate-spin",
+            )}
           />
-          <span>{queued ? "Audit Queued" : "Start Security Audit"}</span>
+          <span>
+            {status === "uploading"
+              ? "Uploading…"
+              : status === "done"
+                ? "Upload Complete"
+                : "Start Security Audit"}
+          </span>
         </button>
       </div>
     </section>

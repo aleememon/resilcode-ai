@@ -1,6 +1,14 @@
 const API = process.env.NEXT_PUBLIC_API_URL;
 
-async function post(path: string, init: RequestInit) {
+export type ScanResult = {
+  scanId: string;
+  projectName: string;
+  fileCount: number;
+  skipped: number;
+  files: { path: string; size: number }[];
+};
+
+async function post(path: string, init: RequestInit): Promise<ScanResult> {
   const res = await fetch(`${API}/api/scans${path}`, {
     ...init,
     credentials: "include",
