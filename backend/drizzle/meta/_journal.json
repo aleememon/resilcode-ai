@@ -8,6 +8,13 @@
       "when": 1793738634185,
       "tag": "0000_daffy_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794052243036,
+      "tag": "0001_serious_menace",
+      "breakpoints": true
     }
   ]
 }

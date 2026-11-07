@@ -4,6 +4,7 @@ import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth";
 import { getTrustedOrigins } from "./origins";
+import { scansRouter } from "./routes/scans";
 
 const app = express();
 const trustedOrigins = getTrustedOrigins();
@@ -23,6 +24,8 @@ app.use(
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.use(express.json());
+
+app.use("/api/scans", scansRouter);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
