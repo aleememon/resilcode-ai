@@ -16,6 +16,7 @@ import {
   type GitHubRepo,
 } from "@/lib/github";
 import { BranchPicker } from "./BranchPicker";
+import { importRepo, type ScanResult } from "@/lib/scans";
 
 type GitHubRepoPanelProps = {
   /** `id` of the user's GitHub row in Better Auth's `account` table. */
@@ -45,7 +46,17 @@ export function GitHubRepoPanel({
   const [branchError, setBranchError] = useState<string | null>(null);
 
   const [commit, setCommit] = useState<GitHubCommit | null>(null);
-  const [queued, setQueued] = useState(false);
+  const [importStatus, setImportStatus] = useState<
+    "idle" | "importing" | "done"
+  >("idle");
+  const [importResult, setImportResult] = useState<ScanResult | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const resetImport = () => {
+    setImportStatus("idle");
+    setImportResult(null);
+    setImportError(null);
+  };
 
   // 1. Token -> viewer + repository list.
   useEffect(() => {
@@ -56,7 +67,9 @@ export function GitHubRepoPanel({
 
     setStatus("loading");
     setErrorMessage(null);
-    setQueued(false);
+    setImportStatus("idle");
+    setImportResult(null);
+    setImportError(null);
 
     (async () => {
       try {
@@ -100,7 +113,9 @@ export function GitHubRepoPanel({
     setBranch(repo?.defaultBranch ?? null);
     setBranchError(null);
     setCommit(null);
-    setQueued(false);
+    setImportStatus("idle");
+    setImportResult(null);
+    setImportError(null);
 
     (async () => {
       try {
@@ -183,7 +198,28 @@ export function GitHubRepoPanel({
   }, [repos, query]);
 
   const canScan =
-    status === "ready" && Boolean(selectedRepo) && Boolean(branch) && !queued;
+    status === "ready" &&
+    Boolean(selectedRepo) &&
+    Boolean(branch) &&
+    importStatus === "idle";
+
+  const startImport = async () => {
+    if (!selectedRepo || !branch || importStatus !== "idle") return;
+    setImportError(null);
+    setImportStatus("importing");
+    try {
+      const data = await importRepo(selectedRepo, branch);
+      setImportResult(data);
+      setImportStatus("done");
+    } catch (error) {
+      setImportStatus("idle");
+      setImportError(
+        error instanceof Error
+          ? error.message
+          : "Import failed. Please try again.",
+      );
+    }
+  };
 
   return (
     <section
@@ -317,7 +353,7 @@ export function GitHubRepoPanel({
                           type="button"
                           onClick={() => {
                             setSelectedRepo(repo.fullName);
-                            setQueued(false);
+                            resetImport();
                           }}
                           aria-pressed={selected}
                           className={cn(
@@ -389,7 +425,7 @@ export function GitHubRepoPanel({
                 defaultBranch={activeRepo?.defaultBranch}
                 onChange={(name) => {
                   setBranch(name);
-                  setQueued(false);
+                  resetImport();
                 }}
               />
             ) : null}
@@ -433,19 +469,47 @@ export function GitHubRepoPanel({
         <button
           type="button"
           disabled={!canScan}
-          onClick={() => setQueued(true)}
+          aria-busy={importStatus === "importing"}
+          onClick={startImport}
           className="flex w-full items-center justify-center gap-space-xs rounded-lg bg-gradient-to-r from-secondary-container to-on-secondary-fixed-variant px-space-lg py-space-sm font-headline-sm text-headline-sm font-bold text-white shadow-[0_0_20px_rgba(112,0,255,0.3)] transition-all hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Icon
-            name={queued ? "check_circle" : "auto_fix_high"}
-            className="text-[20px]"
+            name={
+              importStatus === "done"
+                ? "check_circle"
+                : importStatus === "importing"
+                  ? "sync"
+                  : "auto_fix_high"
+            }
+            className={cn(
+              "text-[20px]",
+              importStatus === "importing" && "animate-spin",
+            )}
           />
-          <span>{queued ? "Scan Queued" : "Import & Scan Branch"}</span>
+          <span>
+            {importStatus === "importing"
+              ? "Importing…"
+              : importStatus === "done"
+                ? "Import Complete"
+                : "Import & Scan Branch"}
+          </span>
         </button>
 
-        {queued && selectedRepo && branch ? (
+        {importError ? (
+          <div
+            role="alert"
+            className="mt-space-xs flex items-center gap-space-xs rounded-lg bg-error-container/20 p-space-sm font-label-code-sm text-label-code-sm text-error"
+          >
+            <Icon name="error" className="text-[18px]" />
+            <span>{importError}</span>
+          </div>
+        ) : null}
+
+        {importStatus === "done" && importResult ? (
           <p className="mt-space-2xs text-center font-label-code-sm text-label-code-sm text-tertiary-container">
-            Queued {selectedRepo}@{branch}
+            {importResult.fileCount.toLocaleString()}{" "}
+            {importResult.fileCount === 1 ? "file" : "files"} ingested ·{" "}
+            {importResult.skipped.toLocaleString()} skipped
           </p>
         ) : null}
       </div>
