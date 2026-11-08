@@ -2,21 +2,12 @@
 
 import { useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { formatSize } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { uploadProject, type ScanResult } from "@/lib/scans";
+import { FileTree } from "./FileTree";
 
 const MAX_BYTES = 150 * 1024 * 1024;
-
-function formatSize(bytes: number) {
-  if (bytes === 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  const exponent = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1,
-  );
-  const value = bytes / 1024 ** exponent;
-  return `${value >= 10 || exponent === 0 ? Math.round(value) : value.toFixed(1)} ${units[exponent]}`;
-}
 
 async function validateZip(file: File): Promise<string | null> {
   if (!file.name.toLowerCase().endsWith(".zip"))
@@ -254,6 +245,12 @@ export function LocalUploadPanel() {
                 <Icon name="close" className="text-[18px]" />
               </button>
             </div>
+          </div>
+        ) : null}
+
+        {status === "done" && result ? (
+          <div className="mt-space-lg">
+            <FileTree key={result.scanId} files={result.files} />
           </div>
         ) : null}
       </div>

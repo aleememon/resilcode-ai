@@ -16,6 +16,7 @@ import {
   type GitHubRepo,
 } from "@/lib/github";
 import { BranchPicker } from "./BranchPicker";
+import { FileTree } from "./FileTree";
 import { importRepo, type ScanResult } from "@/lib/scans";
 
 type GitHubRepoPanelProps = {
@@ -511,6 +512,12 @@ export function GitHubRepoPanel({
             {importResult.fileCount === 1 ? "file" : "files"} ingested ·{" "}
             {importResult.skipped.toLocaleString()} skipped
           </p>
+        ) : null}
+
+        {importStatus === "done" && importResult ? (
+          <div className="mt-space-xs">
+            <FileTree key={importResult.scanId} files={importResult.files} />
+          </div>
         ) : null}
       </div>
     </section>
