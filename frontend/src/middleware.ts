@@ -8,4 +8,6 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/workspace/:path*"] };
+export const config = {
+  matcher: ["/code-ingestion/:path*", "/security-audit/:path*", "/scan/:path*"],
+};

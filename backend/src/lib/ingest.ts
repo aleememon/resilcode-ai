@@ -1,6 +1,5 @@
 import AdmZip from "adm-zip";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 
 const MAX_ENTRIES = 10_000;
@@ -42,7 +41,7 @@ export async function ingestZip(buffer: Buffer, scanId: string) {
   const roots = new Set(names.map((n) => n.split("/")[0]));
   const stripRoot = roots.size === 1 && names.every((n) => n.includes("/"));
 
-  const scanDir = path.join(os.tmpdir(), "resilcode", scanId);
+  const scanDir = path.join(process.cwd(), "scans", scanId);
   await fs.mkdir(scanDir, { recursive: true });
 
   const files: { path: string; size: number }[] = [];
@@ -73,6 +72,7 @@ export async function ingestZip(buffer: Buffer, scanId: string) {
         continue;
       } // zip-slip guard
 
+      /*
       const data = entry.getData();
       if (data.length > MAX_FILE_BYTES) {
         skipped++;
@@ -81,7 +81,24 @@ export async function ingestZip(buffer: Buffer, scanId: string) {
       totalBytes += data.length;
       if (totalBytes > MAX_TOTAL_BYTES)
         throw new Error("Archive is too large once extracted.");
+      */
+      if (entry.header.size > MAX_FILE_BYTES) {
+        skipped++;
+        continue;
+      }
+      if (totalBytes + entry.header.size > MAX_TOTAL_BYTES)
+        throw new Error("Archive is too large once extracted.");
 
+      // 2. Decompress, then re-check the real size in case the zip lied
+      const data = entry.getData();
+      if (data.length > MAX_FILE_BYTES) {
+        skipped++;
+        continue;
+      }
+      totalBytes += data.length;
+      if (totalBytes > MAX_TOTAL_BYTES)
+        throw new Error("Archive is too large once extracted.");
+      
       await fs.mkdir(path.dirname(target), { recursive: true });
       await fs.writeFile(target, data);
       files.push({ path: rel, size: data.length });
