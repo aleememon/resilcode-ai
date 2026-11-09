@@ -35,15 +35,18 @@ export function HowItWorks() {
               Zip Archive or Git Sync
             </h3>
             <p className="mb-space-lg font-body-md text-body-md text-on-surface-variant">
-              Upload local .zip archives securely or authenticate via GitHub to scan branches
-              directly in your CI pipeline.
+              Upload local .zip archives securely or authenticate via GitHub to
+              scan branches directly in your CI pipeline.
             </p>
           </div>
 
           <div className="flex flex-col gap-space-xs rounded-lg bg-surface-container-lowest p-space-md">
             <div className="flex items-center justify-between rounded bg-surface-container p-space-sm text-left">
               <div className="flex items-center gap-space-xs">
-                <Icon name="folder_zip" className="text-[18px] text-primary-container" />
+                <Icon
+                  name="folder_zip"
+                  className="text-[18px] text-primary-container"
+                />
                 <span className="font-label-code-sm text-label-code-sm text-on-surface">
                   project-build.zip
                 </span>
@@ -54,7 +57,10 @@ export function HowItWorks() {
             </div>
             <div className="flex items-center justify-between rounded bg-surface-container p-space-sm text-left">
               <div className="flex items-center gap-space-xs">
-                <Icon name="account_tree" className="text-[18px] text-secondary" />
+                <Icon
+                  name="account_tree"
+                  className="text-[18px] text-secondary"
+                />
                 <span className="font-label-code-sm text-label-code-sm text-on-surface">
                   main • 8f3c2a1
                 </span>
@@ -81,14 +87,17 @@ export function HowItWorks() {
               Semgrep &amp; Tree-Sitter Parsers
             </h3>
             <p className="mb-space-lg font-body-md text-body-md text-on-surface-variant">
-              High-speed Abstract Syntax Tree evaluation flags OWASP Top 10 vulnerabilities in
-              under 12 seconds with zero hallucination.
+              Semgrep rules scan your code for injection flaws, hardcoded
+              secrets, and misconfigurations, with each finding mapped to a CWE
+              and OWASP category.
             </p>
           </div>
 
           <div className="flex flex-col gap-space-xs rounded-lg bg-surface-container-lowest p-space-md">
             <div className="flex items-center justify-between font-label-code-sm text-label-code-sm">
-              <span className="text-on-surface-variant">AST Node Graph Analysis</span>
+              <span className="text-on-surface-variant">
+                AST Node Graph Analysis
+              </span>
               <span className="text-tertiary-fixed">14,820 Nodes</span>
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
@@ -120,18 +129,23 @@ export function HowItWorks() {
               Autonomous PR Generation
             </h3>
             <p className="mb-space-lg font-body-md text-body-md text-on-surface-variant">
-              Side-by-side diff previews let you audit fixes before applying. Auto-generate pull
-              requests and merge directly into staging.
+              Side-by-side diff previews let you audit fixes before applying.
+              Auto-generate pull requests and merge directly into staging.
             </p>
           </div>
 
           <div className="flex flex-col gap-space-xs rounded-lg bg-surface-container-lowest p-space-md">
             <div className="flex flex-wrap items-center justify-between gap-space-2xs font-label-code-sm text-label-code-sm">
               <span className="flex items-center gap-space-3xs font-medium text-primary">
-                <Icon name="call_merge" className="text-[15px] text-tertiary-container" />
+                <Icon
+                  name="call_merge"
+                  className="text-[15px] text-tertiary-container"
+                />
                 PR #418 Ready
               </span>
-              <span className="font-semibold text-tertiary-fixed">Verified Safe</span>
+              <span className="font-semibold text-tertiary-fixed">
+                Verified Safe
+              </span>
             </div>
             <div className="flex items-center justify-between gap-space-xs rounded bg-surface-container p-space-xs text-left font-label-code-sm text-label-code-sm">
               <span className="truncate text-on-surface-variant">
