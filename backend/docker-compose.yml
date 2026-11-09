@@ -17,5 +17,15 @@ services:
       timeout: 5s
       retries: 5
 
+  semgrep:
+    image: semgrep/semgrep:latest
+    container_name: resilcode-semgrep
+    restart: unless-stopped
+    entrypoint: ["sleep", "infinity"]   # keep it alive; the backend runs semgrep via docker exec
+    network_mode: "none"                # scans run fully offline, so your code never leaves the machine
+    volumes:
+      - ./scans:/scans                  # extracted projects (written by the backend)
+      - ./backend/rules:/rules:ro       # your custom rules, read-only
+
 volumes:
   pgdata:
