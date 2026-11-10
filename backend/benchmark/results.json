@@ -1,0 +1,318 @@
+{
+  "date": "2026-11-10",
+  "semgrepVersion": "1.100.0",
+  "ruleCount": 34,
+  "core": {
+    "vulnFiles": 46,
+    "filesDetected": 46,
+    "detectionRate": "100.0%",
+    "plantedProblems": 69,
+    "plantedFound": 69,
+    "safeFiles": 26,
+    "safeFlagged": 0,
+    "falsePositiveRate": "0.0%",
+    "precision": "100.0%"
+  },
+  "stress": {
+    "vulnFiles": 52,
+    "filesDetected": 46,
+    "detectionRate": "88.5%",
+    "safeFiles": 33,
+    "safeFlagged": 7,
+    "falsePositiveRate": "21.2%"
+  },
+  "perRule": {
+    "sql-injection": {
+      "planted": 3,
+      "caught": 3,
+      "falseAlarms": 0
+    },
+    "command-injection": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "code-injection-eval": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "py-sql-injection": {
+      "planted": 4,
+      "caught": 4,
+      "falseAlarms": 0
+    },
+    "py-command-injection": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "py-code-injection-eval": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "py-unsafe-deserialization": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "py-insecure-yaml-load": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "py-hardcoded-secret-assignment": {
+      "planted": 4,
+      "caught": 4,
+      "falseAlarms": 0
+    },
+    "py-hardcoded-jwt-secret": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "py-jwt-verification-disabled": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "py-weak-hash-algorithm": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "py-weak-cipher-algorithm": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "py-insecure-random-token": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "py-debug-enabled": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "py-tls-verification-disabled": {
+      "planted": 3,
+      "caught": 3,
+      "falseAlarms": 0
+    },
+    "py-cors-allows-any-origin": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "py-insecure-cookie-flags": {
+      "planted": 3,
+      "caught": 3,
+      "falseAlarms": 0
+    },
+    "py-ssti-render-template-string": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "py-xss-unescaped-response": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "hardcoded-secret-assignment": {
+      "planted": 3,
+      "caught": 3,
+      "falseAlarms": 0
+    },
+    "hardcoded-secret-known-format": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "hardcoded-secret-envfile": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "hardcoded-jwt-secret": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "weak-hash-algorithm": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "weak-cipher-algorithm": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "insecure-random-token": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "react-dangerously-set-inner-html": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "dom-xss-url-to-html": {
+      "planted": 3,
+      "caught": 3,
+      "falseAlarms": 0
+    },
+    "reflected-xss-express": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    },
+    "cors-allows-any-origin": {
+      "planted": 3,
+      "caught": 3,
+      "falseAlarms": 0
+    },
+    "insecure-cookie-flags": {
+      "planted": 3,
+      "caught": 3,
+      "falseAlarms": 0
+    },
+    "tls-verification-disabled": {
+      "planted": 2,
+      "caught": 2,
+      "falseAlarms": 0
+    },
+    "compose-privileged-container": {
+      "planted": 1,
+      "caught": 1,
+      "falseAlarms": 0
+    }
+  },
+  "misses": [],
+  "safeFlagged": [],
+  "extras": [
+    {
+      "file": "vuln/cmdi_execsync.js",
+      "rule": "reflected-xss-express"
+    },
+    {
+      "file": "vuln/eval_direct.js",
+      "rule": "reflected-xss-express"
+    },
+    {
+      "file": "vuln/eval_newfunction.js",
+      "rule": "reflected-xss-express"
+    }
+  ],
+  "limits": [
+    {
+      "file": "etag_md5.js",
+      "kind": "false_positive",
+      "rule": "weak-hash-algorithm",
+      "note": "MD5 used as a cache ETag, not for security",
+      "fires": true,
+      "asDocumented": true
+    },
+    {
+      "file": "trusted_html.jsx",
+      "kind": "false_positive",
+      "rule": "react-dangerously-set-inner-html",
+      "note": "HTML was sanitized elsewhere; Semgrep cannot see it",
+      "fires": true,
+      "asDocumented": true
+    },
+    {
+      "file": "object_send.js",
+      "kind": "false_positive",
+      "rule": "reflected-xss-express",
+      "note": "res.send(object) returns JSON, but taint still flags it",
+      "fires": true,
+      "asDocumented": true
+    },
+    {
+      "file": "regex_exec.js",
+      "kind": "false_positive",
+      "rule": "reflected-xss-express",
+      "note": "taint follows input through a regex match that only keeps digits",
+      "fires": true,
+      "asDocumented": true
+    },
+    {
+      "file": "cmdi_wrapper_miss.js",
+      "kind": "false_negative",
+      "rule": "command-injection",
+      "note": "input reaches exec() through a helper function (no cross-function tracking)",
+      "fires": false,
+      "asDocumented": true
+    },
+    {
+      "file": "sqli_koa_miss.js",
+      "kind": "false_negative",
+      "rule": "sql-injection",
+      "note": "sources only cover Express-style req.*, not Koa ctx.query",
+      "fires": false,
+      "asDocumented": true
+    },
+    {
+      "file": "secret_dbpass_miss.js",
+      "kind": "false_negative",
+      "rule": "hardcoded-secret-assignment",
+      "note": "variable name dbPass has no keyword the rule recognises",
+      "fires": false,
+      "asDocumented": true
+    },
+    {
+      "file": "py_debug_dev_settings.py",
+      "kind": "false_positive",
+      "rule": "py-debug-enabled",
+      "note": "DEBUG = True in a development-only settings file",
+      "fires": true,
+      "asDocumented": true
+    },
+    {
+      "file": "py_etag_md5.py",
+      "kind": "false_positive",
+      "rule": "py-weak-hash-algorithm",
+      "note": "MD5 used as a cache ETag without usedforsecurity=False",
+      "fires": true,
+      "asDocumented": true
+    },
+    {
+      "file": "py_session_theme.py",
+      "kind": "false_positive",
+      "rule": "py-insecure-random-token",
+      "note": "variable name contains 'session', so it is assumed to be a secret",
+      "fires": true,
+      "asDocumented": true
+    },
+    {
+      "file": "py_sqli_wrapper_miss.py",
+      "kind": "false_negative",
+      "rule": "py-sql-injection",
+      "note": "input reaches execute() through a helper function (no cross-function tracking)",
+      "fires": false,
+      "asDocumented": true
+    },
+    {
+      "file": "py_sqli_fastapi_miss.py",
+      "kind": "false_negative",
+      "rule": "py-sql-injection",
+      "note": "FastAPI passes input as function parameters, which are not recognised as sources",
+      "fires": false,
+      "asDocumented": true
+    },
+    {
+      "file": "py_secret_dbpass_miss.py",
+      "kind": "false_negative",
+      "rule": "py-hardcoded-secret-assignment",
+      "note": "variable name db_pass has no keyword the rule recognises",
+      "fires": false,
+      "asDocumented": true
+    }
+  ]
+}

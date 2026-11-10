@@ -1,0 +1,210 @@
+{
+  "_readme": "Answer key. vuln: file -> rule ids that MUST fire; 'rule@N' means N separate planted problems of that rule in the file. safe/ files must produce no findings. limits: documented weaknesses (false_positive = rule fires but should not; false_negative = rule should fire but does not).",
+  "vuln": {
+    "sqli_concat.js": [
+      "sql-injection"
+    ],
+    "sqli_template.js": [
+      "sql-injection"
+    ],
+    "sqli_variable.ts": [
+      "sql-injection"
+    ],
+    "cmdi_exec.js": [
+      "command-injection"
+    ],
+    "cmdi_execsync.js": [
+      "command-injection"
+    ],
+    "eval_direct.js": [
+      "code-injection-eval"
+    ],
+    "eval_newfunction.js": [
+      "code-injection-eval"
+    ],
+    "secret_assign.js": [
+      "hardcoded-secret-assignment@2"
+    ],
+    "secret_ts.ts": [
+      "hardcoded-secret-assignment"
+    ],
+    "aws_key.js": [
+      "hardcoded-secret-known-format"
+    ],
+    "private_key.js": [
+      "hardcoded-secret-known-format"
+    ],
+    "leaked.env": [
+      "hardcoded-secret-envfile@2"
+    ],
+    "jwt_secret.js": [
+      "hardcoded-jwt-secret"
+    ],
+    "weak_md5.js": [
+      "weak-hash-algorithm"
+    ],
+    "weak_sha1.js": [
+      "weak-hash-algorithm"
+    ],
+    "weak_cipher.js": [
+      "weak-cipher-algorithm@2"
+    ],
+    "random_token.js": [
+      "insecure-random-token"
+    ],
+    "xss_react.jsx": [
+      "react-dangerously-set-inner-html"
+    ],
+    "xss_react_tsx.tsx": [
+      "react-dangerously-set-inner-html"
+    ],
+    "xss_dom.js": [
+      "dom-xss-url-to-html"
+    ],
+    "xss_dom_search.js": [
+      "dom-xss-url-to-html@2"
+    ],
+    "xss_reflected.js": [
+      "reflected-xss-express"
+    ],
+    "cors_open.js": [
+      "cors-allows-any-origin@3"
+    ],
+    "cookie_insecure.js": [
+      "insecure-cookie-flags@3"
+    ],
+    "tls_off.js": [
+      "tls-verification-disabled@2"
+    ],
+    "docker-compose.yml": [
+      "compose-privileged-container"
+    ],
+    "py_sqli_fstring.py": [
+      "py-sql-injection"
+    ],
+    "py_sqli_format.py": [
+      "py-sql-injection@2"
+    ],
+    "py_sqli_django.py": [
+      "py-sql-injection"
+    ],
+    "py_cmdi_system.py": [
+      "py-command-injection"
+    ],
+    "py_cmdi_subprocess.py": [
+      "py-command-injection"
+    ],
+    "py_eval.py": [
+      "py-code-injection-eval@2"
+    ],
+    "py_pickle.py": [
+      "py-unsafe-deserialization"
+    ],
+    "py_yaml.py": [
+      "py-insecure-yaml-load"
+    ],
+    "py_secret.py": [
+      "py-hardcoded-secret-assignment@4"
+    ],
+    "py_jwt_secret.py": [
+      "py-hardcoded-jwt-secret"
+    ],
+    "py_jwt_noverify.py": [
+      "py-jwt-verification-disabled"
+    ],
+    "py_weak_hash.py": [
+      "py-weak-hash-algorithm@2"
+    ],
+    "py_weak_cipher.py": [
+      "py-weak-cipher-algorithm@2"
+    ],
+    "py_random_token.py": [
+      "py-insecure-random-token"
+    ],
+    "py_debug.py": [
+      "py-debug-enabled@2"
+    ],
+    "py_tls_off.py": [
+      "py-tls-verification-disabled@3"
+    ],
+    "py_cors.py": [
+      "py-cors-allows-any-origin@2"
+    ],
+    "py_ssti.py": [
+      "py-ssti-render-template-string"
+    ],
+    "py_xss.py": [
+      "py-xss-unescaped-response@2"
+    ],
+    "py_cookie.py": [
+      "py-insecure-cookie-flags@3"
+    ]
+  },
+  "limits": {
+    "etag_md5.js": {
+      "kind": "false_positive",
+      "rule": "weak-hash-algorithm",
+      "note": "MD5 used as a cache ETag, not for security"
+    },
+    "trusted_html.jsx": {
+      "kind": "false_positive",
+      "rule": "react-dangerously-set-inner-html",
+      "note": "HTML was sanitized elsewhere; Semgrep cannot see it"
+    },
+    "object_send.js": {
+      "kind": "false_positive",
+      "rule": "reflected-xss-express",
+      "note": "res.send(object) returns JSON, but taint still flags it"
+    },
+    "regex_exec.js": {
+      "kind": "false_positive",
+      "rule": "reflected-xss-express",
+      "note": "taint follows input through a regex match that only keeps digits"
+    },
+    "cmdi_wrapper_miss.js": {
+      "kind": "false_negative",
+      "rule": "command-injection",
+      "note": "input reaches exec() through a helper function (no cross-function tracking)"
+    },
+    "sqli_koa_miss.js": {
+      "kind": "false_negative",
+      "rule": "sql-injection",
+      "note": "sources only cover Express-style req.*, not Koa ctx.query"
+    },
+    "secret_dbpass_miss.js": {
+      "kind": "false_negative",
+      "rule": "hardcoded-secret-assignment",
+      "note": "variable name dbPass has no keyword the rule recognises"
+    },
+    "py_debug_dev_settings.py": {
+      "kind": "false_positive",
+      "rule": "py-debug-enabled",
+      "note": "DEBUG = True in a development-only settings file"
+    },
+    "py_etag_md5.py": {
+      "kind": "false_positive",
+      "rule": "py-weak-hash-algorithm",
+      "note": "MD5 used as a cache ETag without usedforsecurity=False"
+    },
+    "py_session_theme.py": {
+      "kind": "false_positive",
+      "rule": "py-insecure-random-token",
+      "note": "variable name contains 'session', so it is assumed to be a secret"
+    },
+    "py_sqli_wrapper_miss.py": {
+      "kind": "false_negative",
+      "rule": "py-sql-injection",
+      "note": "input reaches execute() through a helper function (no cross-function tracking)"
+    },
+    "py_sqli_fastapi_miss.py": {
+      "kind": "false_negative",
+      "rule": "py-sql-injection",
+      "note": "FastAPI passes input as function parameters, which are not recognised as sources"
+    },
+    "py_secret_dbpass_miss.py": {
+      "kind": "false_negative",
+      "rule": "py-hardcoded-secret-assignment",
+      "note": "variable name db_pass has no keyword the rule recognises"
+    }
+  }
+}

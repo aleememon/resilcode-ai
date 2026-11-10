@@ -1,0 +1,1 @@
+claims = jwt.decode(token, options={"verify_signature": False})

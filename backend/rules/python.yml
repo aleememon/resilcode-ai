@@ -1,0 +1,456 @@
+rules:
+  - id: py-sql-injection
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      User input flows into a SQL query string. Use parameterized queries
+      (placeholders plus a values tuple) instead of building SQL text.
+    pattern-sources:
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.json
+      - pattern: request.data
+      - pattern: request.cookies
+      - pattern: request.headers
+      - pattern: request.GET
+      - pattern: request.POST
+      - pattern: request.get_json(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $CUR.execute($SQL, ...)
+              - pattern: |
+                  $CUR.executemany($SQL, ...)
+              - pattern: |
+                  $CUR.executescript($SQL)
+              - pattern: |
+                  $M.raw($SQL, ...)
+              - pattern: |
+                  text($SQL)
+              - pattern: |
+                  RawSQL($SQL, ...)
+          - focus-metavariable: $SQL
+    metadata:
+      category: injection
+      cwe: CWE-89
+      owasp: A03:2021
+      confidence: HIGH
+
+  - id: py-command-injection
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      User input flows into a shell command. Pass a list of arguments to
+      subprocess without shell=True and never build shell text from input.
+    pattern-sources:
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.json
+      - pattern: request.data
+      - pattern: request.cookies
+      - pattern: request.headers
+      - pattern: request.GET
+      - pattern: request.POST
+      - pattern: request.get_json(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  os.system($CMD)
+              - pattern: |
+                  os.popen($CMD, ...)
+              - pattern: |
+                  subprocess.getoutput($CMD)
+              - pattern: |
+                  subprocess.$F($CMD, ..., shell=True, ...)
+          - focus-metavariable: $CMD
+    metadata:
+      category: injection
+      cwe: CWE-78
+      owasp: A03:2021
+      confidence: HIGH
+
+  - id: py-code-injection-eval
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      User input flows into eval() or exec(), which runs it as code. Use
+      ast.literal_eval or json.loads for data.
+    pattern-sources:
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.json
+      - pattern: request.data
+      - pattern: request.cookies
+      - pattern: request.headers
+      - pattern: request.GET
+      - pattern: request.POST
+      - pattern: request.get_json(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  eval($CODE, ...)
+              - pattern: |
+                  exec($CODE, ...)
+          - focus-metavariable: $CODE
+    metadata:
+      category: injection
+      cwe: CWE-95
+      owasp: A03:2021
+      confidence: HIGH
+
+  - id: py-unsafe-deserialization
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      User input is deserialized with a format that can run code (pickle,
+      marshal, unsafe YAML). Use JSON or yaml.safe_load instead.
+    pattern-sources:
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.json
+      - pattern: request.data
+      - pattern: request.cookies
+      - pattern: request.files
+      - pattern: request.GET
+      - pattern: request.POST
+      - pattern: request.get_json(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  pickle.loads($X, ...)
+              - pattern: |
+                  pickle.load($X, ...)
+              - pattern: |
+                  dill.loads($X, ...)
+              - pattern: |
+                  marshal.loads($X)
+              - pattern: |
+                  yaml.unsafe_load($X)
+          - focus-metavariable: $X
+    metadata:
+      category: injection
+      cwe: CWE-502
+      owasp: A08:2021
+      confidence: HIGH
+
+  - id: py-insecure-yaml-load
+    languages: [python]
+    severity: WARNING
+    message: >-
+      yaml.load without a safe loader can build arbitrary Python objects.
+      Use yaml.safe_load, or pass Loader=yaml.SafeLoader.
+    patterns:
+      - pattern: |
+          yaml.load(...)
+      - pattern-not: |
+          yaml.load(..., Loader=yaml.SafeLoader)
+      - pattern-not: |
+          yaml.load(..., Loader=SafeLoader)
+      - pattern-not: |
+          yaml.load(..., Loader=yaml.CSafeLoader)
+      - pattern-not: |
+          yaml.load($X, yaml.SafeLoader)
+    metadata:
+      category: injection
+      cwe: CWE-502
+      owasp: A08:2021
+      confidence: HIGH
+
+  - id: py-hardcoded-secret-assignment
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A password, secret, or API key is written directly in the source code.
+      Load it from an environment variable or a secrets manager instead.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $NAME = "$VALUE"
+          - pattern: |
+              {..., "$NAME": "$VALUE", ...}
+          - pattern: |
+              $F(..., $NAME="$VALUE", ...)
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^.*(password|passwd|pwd|secret|apikey|api_key|secretkey|secret_key|privatekey|private_key|accesstoken|access_token|authtoken|auth_token|clientsecret|client_secret)(["']?\])?$
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^\S{8,}$
+    metadata:
+      category: secrets
+      cwe: CWE-798
+      owasp: A07:2021
+      confidence: MEDIUM
+
+  - id: py-hardcoded-jwt-secret
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A JWT is signed or verified with a secret written in the code. Anyone
+      who can read the code can forge tokens. Use an environment variable.
+    pattern-either:
+      - pattern: |
+          jwt.encode($PAYLOAD, "$SECRET", ...)
+      - pattern: |
+          jwt.decode($TOKEN, "$SECRET", ...)
+    metadata:
+      category: secrets
+      cwe: CWE-798
+      owasp: A07:2021
+      confidence: HIGH
+
+  - id: py-jwt-verification-disabled
+    languages: [python]
+    severity: ERROR
+    message: >-
+      JWT signature checking is turned off, so anyone can forge a token.
+      Remove verify_signature=False and always verify with a key.
+    pattern-either:
+      - pattern: |
+          jwt.decode(..., options={..., "verify_signature": False, ...}, ...)
+      - pattern: |
+          jwt.decode(..., verify=False, ...)
+    metadata:
+      category: secrets
+      cwe: CWE-347
+      owasp: A02:2021
+      confidence: HIGH
+
+  - id: py-weak-hash-algorithm
+    languages: [python]
+    severity: WARNING
+    message: >-
+      MD5 and SHA-1 are broken for security use. Use SHA-256 or stronger, and
+      bcrypt, scrypt, or argon2 for passwords. For non-security checksums,
+      pass usedforsecurity=False.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              hashlib.md5(...)
+          - pattern: |
+              hashlib.sha1(...)
+          - pattern: |
+              hashlib.new("md5", ...)
+          - pattern: |
+              hashlib.new("sha1", ...)
+      - pattern-not: |
+          hashlib.md5(..., usedforsecurity=False, ...)
+      - pattern-not: |
+          hashlib.sha1(..., usedforsecurity=False, ...)
+    metadata:
+      category: weak-crypto
+      cwe: CWE-328
+      owasp: A02:2021
+      confidence: MEDIUM
+
+  - id: py-weak-cipher-algorithm
+    languages: [python]
+    severity: ERROR
+    message: >-
+      This cipher or mode is weak (DES, 3DES, RC4, Blowfish, or ECB mode).
+      Use AES-256-GCM with a random nonce.
+    pattern-either:
+      - pattern: |
+          DES.new(...)
+      - pattern: |
+          DES3.new(...)
+      - pattern: |
+          ARC4.new(...)
+      - pattern: |
+          Blowfish.new(...)
+      - pattern: |
+          AES.new($K, AES.MODE_ECB, ...)
+      - pattern: |
+          modes.ECB()
+      - pattern: |
+          algorithms.TripleDES(...)
+      - pattern: |
+          algorithms.ARC4(...)
+    metadata:
+      category: weak-crypto
+      cwe: CWE-327
+      owasp: A02:2021
+      confidence: HIGH
+
+  - id: py-insecure-random-token
+    languages: [python]
+    severity: ERROR
+    message: >-
+      The random module is predictable and must not generate tokens,
+      passwords, or secrets. Use the secrets module (secrets.token_urlsafe).
+    patterns:
+      - pattern: |
+          $NAME = <... random.$F(...) ...>
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^.*(token|password|secret|session|otp|apikey|nonce).*$
+      - metavariable-regex:
+          metavariable: $F
+          regex: ^(random|randint|choice|choices|randrange|getrandbits|sample|uniform)$
+    metadata:
+      category: weak-crypto
+      cwe: CWE-338
+      owasp: A02:2021
+      confidence: MEDIUM
+
+  - id: py-debug-enabled
+    languages: [python]
+    severity: WARNING
+    message: >-
+      Debug mode is on. Flask and Django debug pages expose source code and
+      can allow remote code execution. Turn it off in production.
+    pattern-either:
+      - pattern: |
+          $APP.run(..., debug=True, ...)
+      - pattern: |
+          DEBUG = True
+    metadata:
+      category: misconfiguration
+      cwe: CWE-489
+      owasp: A05:2021
+      confidence: HIGH
+
+  - id: py-tls-verification-disabled
+    languages: [python]
+    severity: ERROR
+    message: >-
+      TLS certificate checking is turned off, which allows man-in-the-middle
+      attacks. Remove this setting and fix the certificate instead.
+    pattern-either:
+      - pattern: |
+          $F(..., verify=False, ...)
+      - pattern: |
+          ssl._create_unverified_context(...)
+      - pattern: |
+          $CTX.check_hostname = False
+      - pattern: |
+          $CTX.verify_mode = ssl.CERT_NONE
+    metadata:
+      category: misconfiguration
+      cwe: CWE-295
+      owasp: A02:2021
+      confidence: HIGH
+
+  - id: py-cors-allows-any-origin
+    languages: [python]
+    severity: WARNING
+    message: >-
+      CORS is open to every website. Allow only the specific origins that
+      need access.
+    pattern-either:
+      - pattern: |
+          CORS($APP)
+      - pattern: |
+          CORS($APP, ..., origins="*", ...)
+      - pattern: |
+          $APP.add_middleware(CORSMiddleware, ..., allow_origins=["*"], ...)
+      - pattern: |
+          $R.headers["Access-Control-Allow-Origin"] = "*"
+    metadata:
+      category: misconfiguration
+      cwe: CWE-942
+      owasp: A05:2021
+      confidence: HIGH
+
+  - id: py-insecure-cookie-flags
+    languages: [python]
+    severity: WARNING
+    message: >-
+      A cookie is set without protection. Set httponly=True, secure=True, and
+      a samesite value so scripts and plain HTTP cannot read it.
+    pattern-either:
+      - pattern: |
+          $R.set_cookie($NAME, $VALUE)
+      - pattern: |
+          $R.set_cookie($NAME, $VALUE, ..., httponly=False, ...)
+      - pattern: |
+          $R.set_cookie($NAME, $VALUE, ..., secure=False, ...)
+      - pattern: |
+          SESSION_COOKIE_SECURE = False
+      - pattern: |
+          SESSION_COOKIE_HTTPONLY = False
+    metadata:
+      category: misconfiguration
+      cwe: CWE-1004
+      owasp: A05:2021
+      confidence: MEDIUM
+
+  - id: py-ssti-render-template-string
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      User input becomes part of a template string, which allows server-side
+      template injection and code execution. Keep the template constant and
+      pass user data as template variables.
+    pattern-sources:
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.json
+      - pattern: request.cookies
+      - pattern: request.GET
+      - pattern: request.POST
+      - pattern: request.get_json(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: |
+              render_template_string($S, ...)
+          - focus-metavariable: $S
+    metadata:
+      category: injection
+      cwe: CWE-1336
+      owasp: A03:2021
+      confidence: HIGH
+
+  - id: py-xss-unescaped-response
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      User input is marked as safe HTML or returned as an HTML response
+      without escaping. Escape it first, or render it through a template.
+    pattern-sources:
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.json
+      - pattern: request.cookies
+      - pattern: request.GET
+      - pattern: request.POST
+      - pattern: request.get_json(...)
+    pattern-sanitizers:
+      - pattern: escape(...)
+      - pattern: html.escape(...)
+      - pattern: markupsafe.escape(...)
+      - pattern: bleach.clean(...)
+      - pattern: strip_tags(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  Markup($X)
+              - pattern: |
+                  mark_safe($X)
+              - pattern: |
+                  HttpResponse($X, ...)
+              - pattern: |
+                  HTMLResponse($X, ...)
+          - focus-metavariable: $X
+    metadata:
+      category: xss
+      cwe: CWE-79
+      owasp: A03:2021
+      confidence: HIGH

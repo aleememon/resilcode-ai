@@ -1,0 +1,5 @@
+h = hashlib.sha256(data).hexdigest()
+etag = hashlib.md5(body, usedforsecurity=False).hexdigest()
+c = AES.new(key, AES.MODE_GCM)
+t = secrets.token_hex(32)
+hashed = bcrypt.hashpw(password, bcrypt.gensalt())

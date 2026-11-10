@@ -1,0 +1,151 @@
+rules:
+  - id: react-dangerously-set-inner-html
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      dangerouslySetInnerHTML inserts raw HTML into the page. If any part of
+      it comes from a user, it is an XSS hole. Render text normally, or
+      sanitize with DOMPurify first.
+    patterns:
+      - pattern: |
+          <$EL ... dangerouslySetInnerHTML={{ __html: $X }} ... />
+      - pattern-not: |
+          <$EL ... dangerouslySetInnerHTML={{ __html: "..." }} ... />
+      - pattern-not: |
+          <$EL ... dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(...) }} ... />
+      - pattern-not: |
+          <$EL ... dangerouslySetInnerHTML={{ __html: sanitizeHtml(...) }} ... />
+    metadata:
+      category: xss
+      cwe: CWE-79
+      owasp: A03:2021
+      confidence: MEDIUM
+
+  - id: dom-xss-url-to-html
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Data from the URL (or referrer) is written into the page as HTML. Use
+      textContent instead of innerHTML, or sanitize with DOMPurify.
+    pattern-sources:
+      - pattern: location.hash
+      - pattern: location.search
+      - pattern: location.href
+      - pattern: document.URL
+      - pattern: document.referrer
+      - pattern: window.name
+    pattern-sanitizers:
+      - pattern: DOMPurify.sanitize(...)
+      - pattern: encodeURIComponent(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $EL.innerHTML = $V
+              - pattern: $EL.outerHTML = $V
+              - pattern: document.write($V)
+              - pattern: $EL.insertAdjacentHTML($POS, $V)
+          - focus-metavariable: $V
+    metadata:
+      category: xss
+      cwe: CWE-79
+      owasp: A03:2021
+      confidence: HIGH
+
+  - id: reflected-xss-express
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      User input is sent back in the HTTP response as HTML. Escape it first,
+      or return JSON with res.json().
+    pattern-sources:
+      - pattern: req.query
+      - pattern: req.body
+      - pattern: req.params
+    pattern-sanitizers:
+      - pattern: escapeHtml(...)
+      - pattern: DOMPurify.sanitize(...)
+      - pattern: validator.escape(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: res.send($V)
+              - pattern: res.write($V)
+          - focus-metavariable: $V
+    metadata:
+      category: xss
+      cwe: CWE-79
+      owasp: A03:2021
+      confidence: MEDIUM
+
+  - id: cors-allows-any-origin
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      CORS is open to every website. Allow only the specific origins that
+      need access.
+    pattern-either:
+      - pattern: cors()
+      - pattern: |
+          cors({ ..., origin: "*", ... })
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", "*")
+      - pattern: $RES.header("Access-Control-Allow-Origin", "*")
+    metadata:
+      category: misconfiguration
+      cwe: CWE-942
+      owasp: A05:2021
+      confidence: HIGH
+
+  - id: insecure-cookie-flags
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A cookie is set without protection. Set httpOnly: true, secure: true,
+      and a sameSite value so scripts and plain HTTP cannot read it.
+    pattern-either:
+      - pattern: $RES.cookie($NAME, $VALUE)
+      - pattern: |
+          $RES.cookie($NAME, $VALUE, { ..., httpOnly: false, ... })
+      - pattern: |
+          $RES.cookie($NAME, $VALUE, { ..., secure: false, ... })
+      - pattern: |
+          { ..., cookie: { ..., secure: false, ... }, ... }
+      - pattern: |
+          { ..., cookie: { ..., httpOnly: false, ... }, ... }
+    metadata:
+      category: misconfiguration
+      cwe: CWE-1004
+      owasp: A05:2021
+      confidence: MEDIUM
+
+  - id: tls-verification-disabled
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      TLS certificate checking is turned off, which allows man-in-the-middle
+      attacks. Remove this setting and fix the certificate instead.
+    pattern-either:
+      - pattern: |
+          { ..., rejectUnauthorized: false, ... }
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+    metadata:
+      category: misconfiguration
+      cwe: CWE-295
+      owasp: A02:2021
+      confidence: HIGH
+
+  - id: compose-privileged-container
+    languages: [yaml]
+    severity: ERROR
+    message: >-
+      A container runs in privileged mode, which gives it almost full access
+      to the host. Remove privileged: true and grant only the capabilities
+      it needs.
+    pattern: |
+      privileged: true
+    metadata:
+      category: misconfiguration
+      cwe: CWE-250
+      owasp: A05:2021
+      confidence: HIGH

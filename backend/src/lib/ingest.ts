@@ -97,7 +97,7 @@ export async function ingestZip(buffer: Buffer, scanId: string) {
       }
       totalBytes += data.length;
       if (totalBytes > MAX_TOTAL_BYTES)
-        throw new Error("Archive is too large once extracted.");
+        throw new Error("Archive is two large once extracted.");
       
       await fs.mkdir(path.dirname(target), { recursive: true });
       await fs.writeFile(target, data);

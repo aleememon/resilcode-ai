@@ -1,0 +1,1 @@
+const awsId = "AKIAIOSFODNN7EXAMPLE";

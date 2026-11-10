@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: resilcode
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,14 +18,15 @@ services:
       retries: 5
 
   semgrep:
-    image: semgrep/semgrep:latest
+    image: semgrep/semgrep:1.100.0
     container_name: resilcode-semgrep
     restart: unless-stopped
     entrypoint: ["sleep", "infinity"] # keep it alive; the backend runs semgrep via docker exec
     network_mode: "none" # scans run fully offline, so your code never leaves the machine
     volumes:
-      - ./scans:/scans # extracted projects (written by the backend)
+      - ./scans:/scans:ro # extracted projects (written by the backend)
       - ./rules:/rules:ro # your custom rules, read-only
+      - ./benchmark:/benchmark:ro
 
 volumes:
   pgdata:
