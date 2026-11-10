@@ -15,6 +15,13 @@
       "when": 1794052243036,
       "tag": "0001_serious_menace",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794341592180,
+      "tag": "0002_early_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }
