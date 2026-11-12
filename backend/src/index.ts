@@ -4,7 +4,7 @@ import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth";
 import { getTrustedOrigins } from "./origins";
-import { scansRouter } from "./routes/scans";
+import { scansRouter, recoverInterruptedScans } from "./routes/scans";
 
 const app = express();
 const trustedOrigins = getTrustedOrigins();
@@ -29,4 +29,5 @@ app.use("/api/scans", scansRouter);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
+await recoverInterruptedScans();
 app.listen(5000, () => console.log("Backend on http://localhost:5000"));
