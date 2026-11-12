@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, index, jsonb } from "drizzle-orm/pg-core";
 import { user } from "./schema";
 
 export const SCAN_STATUSES = ["ingested", "scanning", "completed", "failed"] as const;
@@ -20,6 +20,8 @@ export const scans = pgTable("scans", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   startedAt: timestamp("started_at"), // set when the scan starts
   completedAt: timestamp("completed_at"), // set when it completes or fails
+  scannedFiles: integer("scanned_files"), // files Semgrep actually analysed
+  warnings: jsonb("warnings").$type<string[]>(), // non-fatal scan problems
 });
 
 export const findings = pgTable(
