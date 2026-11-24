@@ -1,12 +1,28 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useAuthIdentity } from "@/hooks/use-auth-identity";
+import { useScan } from "@/hooks/use-scan";
 import { cn } from "@/lib/cn";
+import { formatSize } from "@/lib/format";
+import {
+  formatDuration,
+  formatLogTime,
+  scanElapsedSeconds,
+  scanProgress,
+} from "@/lib/scan-progress";
+import type {
+  Finding,
+  FindingSeverity,
+  ScanDetail,
+  ScanStatus,
+} from "@/lib/scans";
+import { WorkspaceFooter } from "./WorkspaceFooter";
+import { WorkspaceHeader } from "./WorkspaceHeader";
 import styles from "./SecurityAuditScreen.module.css";
-
-const START_NODES = 14_820;
-const PEAK_NODES = 16_240;
 
 type LogTone = "info" | "warn" | "llm" | "audit";
 
@@ -15,6 +31,42 @@ const TONE_TAG_CLASS: Record<LogTone, string> = {
   warn: "text-error",
   llm: "text-secondary",
   audit: "text-tertiary-fixed",
+};
+
+const SEVERITY_STYLE: Record<
+  FindingSeverity,
+  { badge: string; soft: string }
+> = {
+  ERROR: {
+    badge: "border-error/40 bg-error-container/40 text-error",
+    soft: "bg-error-container/30 text-error",
+  },
+  WARNING: {
+    badge: "border-alert-amber/40 bg-alert-amber/15 text-alert-amber",
+    soft: "bg-alert-amber/15 text-alert-amber",
+  },
+  INFO: {
+    badge: "border-primary-container/40 bg-primary-container/10 text-primary",
+    soft: "bg-surface-container-high/80 text-primary-container",
+  },
+};
+
+const STATUS_META: Record<
+  ScanStatus,
+  { label: string; dot: string; text: string }
+> = {
+  ingested: { label: "Queued", dot: "bg-outline", text: "text-outline" },
+  scanning: {
+    label: "Scanning",
+    dot: "bg-primary-container animate-pulse",
+    text: "text-primary",
+  },
+  completed: {
+    label: "Complete",
+    dot: "bg-tertiary-container",
+    text: "text-tertiary-fixed",
+  },
+  failed: { label: "Failed", dot: "bg-error", text: "text-error" },
 };
 
 function LogLine({
@@ -49,188 +101,25 @@ function LogLine({
   );
 }
 
-function NodeBadge({
-  file,
-  icon,
-  label,
-  variant,
-}: {
-  file: string;
-  icon: string;
-  label: string;
-  variant: "vulnerable" | "clean";
-}) {
-  const vulnerable = variant === "vulnerable";
+function StatusPill({ status }: { status: ScanStatus }) {
+  const meta = STATUS_META[status];
 
   return (
-    <div
+    <span
       className={cn(
-        "flex w-full flex-col gap-space-3xs rounded-xl border border-glass-line/10 bg-surface-container-lowest/90 p-space-xs backdrop-blur-xl transition-transform hover:scale-105",
-        vulnerable
-          ? "shadow-[0_4px_20px_rgba(255,46,91,0.25)]"
-          : "shadow-[0_4px_16px_rgba(0,240,255,0.2)]",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-glass-line/15 bg-surface-container-lowest/70 px-2 py-0.5 font-label-code-sm text-[10px] font-semibold uppercase tracking-wider",
+        meta.text,
       )}
     >
-      <div className="flex items-center justify-between gap-space-xs">
-        <span className="truncate font-label-code-md text-label-code-md font-medium text-primary">
-          {file}
-        </span>
-        <span
-          aria-hidden="true"
-          className={cn(
-            "h-2 w-2 shrink-0 rounded-full",
-            vulnerable
-              ? "bg-error shadow-[0_0_8px_#ff2e5b]"
-              : "bg-primary-container shadow-[0_0_8px_#00f0ff]",
-          )}
-        />
-      </div>
-      <div
-        className={cn(
-          "flex items-center gap-space-3xs rounded px-space-2xs py-space-3xs font-label-code-sm text-label-code-sm",
-          vulnerable
-            ? "bg-error-container/30 text-error"
-            : "bg-surface-container-high/80 text-tertiary-fixed",
-        )}
-      >
-        <Icon name={icon} className="text-[14px]" />
-        <span className="truncate">{label}</span>
-      </div>
-    </div>
-  );
-}
-
-function ScanningHeader() {
-  return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-glass-line/10 bg-surface-container-lowest/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-content items-center justify-between gap-space-sm px-margin-mobile sm:px-margin-tablet lg:px-margin-desktop">
-        <div className="flex min-w-0 items-center gap-space-sm">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-surface-container-high shadow-[0_0_12px_rgba(0,240,255,0.15)]">
-            <Icon
-              name="shield"
-              filled
-              className="text-[18px] text-primary-container"
-            />
-          </span>
-          <span className="truncate font-headline-sm text-headline-sm font-bold tracking-tight text-primary-container">
-            ResilCode AI
-          </span>
-        </div>
-
-        <div className="hidden items-center gap-space-xs rounded-full bg-surface-container/60 px-space-sm py-space-2xs md:flex">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-container opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-container" />
-          </span>
-          <span className="font-label-code-sm text-label-code-sm text-on-surface-variant">
-            SCANNING
-          </span>
-          <span className="font-label-code-sm text-label-code-sm text-outline-variant">
-            /
-          </span>
-          <span className="font-label-code-md text-label-code-md font-medium text-primary">
-            my-vibe-app.zip
-          </span>
-        </div>
-
-        <div className="flex items-center gap-space-xs sm:gap-space-md">
-          <div className="hidden items-center gap-space-xs rounded-lg bg-surface-container-low px-space-sm py-space-2xs sm:flex">
-            <Icon
-              name="timer"
-              className="text-[16px] text-primary-fixed-dim"
-            />
-            <span className="font-label-code-md text-label-code-md tracking-wider text-on-surface">
-              00:04:32
-            </span>
-          </div>
-
-          <button
-            type="button"
-            className="flex items-center gap-space-2xs rounded-lg bg-error-container px-space-xs py-space-2xs font-body-sm text-body-sm font-medium text-on-error-container transition-all hover:bg-error hover:text-on-error sm:px-space-sm"
-          >
-            <Icon name="close" className="text-[16px]" />
-            <span className="hidden sm:inline">Abort Scan</span>
-          </button>
-
-          <span
-            aria-hidden="true"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary"
-          >
-            <Icon name="person" className="text-[18px] text-on-primary" />
-          </span>
-        </div>
-      </div>
-      <div className={styles.scanline} aria-hidden="true" />
-    </header>
-  );
-}
-
-function ProgressPanel({ nodes }: { nodes: number }) {
-  return (
-    <section className="glass-sheen relative w-full rounded-xl bg-surface-container/70 p-space-md shadow-xl backdrop-blur-xl">
-      <div className="flex flex-col justify-between gap-space-xs md:flex-row md:items-center">
-        <div className="flex min-w-0 items-center gap-space-sm">
-          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest">
-            <Icon
-              name="sync"
-              className="animate-spin text-[18px] text-primary-container"
-            />
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <div className="flex items-center gap-space-xs">
-              <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-primary">
-                68% Completed
-              </span>
-              <span className="font-label-code-md text-label-code-md text-outline-variant">
-                —
-              </span>
-              <span className="truncate font-headline-sm text-headline-sm font-semibold text-on-surface">
-                Analyzing AST Trees
-              </span>
-            </div>
-            <div className="flex items-center gap-space-xs font-label-code-sm text-label-code-sm text-on-surface-variant">
-              <span className="font-semibold text-primary-container">
-                {nodes.toLocaleString("en-US")}
-              </span>
-              <span>/ 21,800 AST Nodes Parsed</span>
-              <span className="text-outline-variant">•</span>
-              <span className="text-tertiary-fixed">Est. 4s remaining</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-space-xs self-start md:self-auto">
-          <div className="flex items-center gap-space-2xs rounded bg-surface-container-lowest px-space-xs py-space-3xs font-label-code-sm text-label-code-sm text-on-surface-variant">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary-container" />
-            <span>MEM: 384 MB</span>
-          </div>
-          <div className="flex items-center gap-space-2xs rounded bg-surface-container-lowest px-space-xs py-space-3xs font-label-code-sm text-label-code-sm text-tertiary-fixed">
-            <Icon name="bolt" className="text-[14px]" />
-            <span>9.4k nodes/sec</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative mt-space-xs h-2.5 w-full overflow-hidden rounded-full bg-surface-container-lowest">
-        <div
-          className="relative h-full rounded-full bg-primary-container shadow-[0_0_16px_rgba(0,240,255,0.7)]"
-          style={{ width: "68%" }}
-        >
-          <div
-            className={cn(
-              "absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent",
-              styles.shimmer,
-            )}
-          />
-        </div>
-      </div>
-    </section>
+      <span className={cn("h-1.5 w-1.5 rounded-full", meta.dot)} />
+      {meta.label}
+    </span>
   );
 }
 
 function RadarCore() {
   return (
-    <div className="relative flex h-44 w-44 shrink-0 items-center justify-center sm:absolute sm:left-1/2 sm:top-1/2 sm:h-56 sm:w-56 sm:-translate-x-1/2 sm:-translate-y-1/2">
+    <div className="relative flex h-44 w-44 shrink-0 items-center justify-center sm:h-56 sm:w-56">
       <div
         className={cn(
           "absolute inset-0 rounded-full bg-gradient-to-tr from-primary-container/20 via-transparent to-secondary-container/30 shadow-[0_0_30px_rgba(0,240,255,0.15)]",
@@ -262,9 +151,280 @@ function RadarCore() {
   );
 }
 
-function ScanSandbox() {
+function FindingBadge({ finding }: { finding: Finding }) {
+  const style = SEVERITY_STYLE[finding.severity];
+
   return (
-    <section className="relative flex min-h-[440px] w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-surface-container/60 p-space-lg shadow-2xl backdrop-blur-2xl lg:p-space-xl">
+    <div className="flex w-full flex-col gap-space-3xs rounded-xl border border-glass-line/10 bg-surface-container-lowest/90 p-space-xs backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-space-xs">
+        <span
+          className="truncate font-label-code-md text-label-code-md font-medium text-primary"
+          title={`${finding.filePath}:${finding.startLine}`}
+        >
+          {finding.filePath}:{finding.startLine}
+        </span>
+        <span
+          className={cn(
+            "shrink-0 rounded border px-1.5 py-0.5 font-label-code-sm text-[10px] font-bold uppercase tracking-wider",
+            style.badge,
+          )}
+        >
+          {finding.severity}
+        </span>
+      </div>
+      <div
+        className={cn(
+          "flex items-center gap-space-3xs rounded px-space-2xs py-space-3xs font-label-code-sm text-label-code-sm",
+          style.soft,
+        )}
+      >
+        <Icon name="bug_report" className="text-[14px]" />
+        <span className="truncate" title={finding.message}>
+          {finding.cwe ? `${finding.cwe} · ` : ""}
+          {finding.category}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function AuditBar({
+  scan,
+  scanId,
+  now,
+}: {
+  scan: ScanDetail | null;
+  scanId: string | null;
+  now: number;
+}) {
+  const status = scan?.status ?? "ingested";
+  const elapsed = scanElapsedSeconds(scan, now);
+  const completed = status === "completed";
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-space-xs rounded-xl border border-glass-line/10 bg-surface-container-low/60 px-space-sm py-2 backdrop-blur-xl">
+      <div className="flex min-w-0 items-center gap-space-xs">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-container-high text-primary-container">
+          <Icon
+            name={scan?.source === "github" ? "hub" : "folder_zip"}
+            className="text-[18px]"
+          />
+        </span>
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-label-code-md text-label-code-md font-semibold text-primary">
+              {scan?.projectName ??
+                (scanId ? "Loading scan…" : "No scan selected")}
+            </span>
+            <StatusPill status={status} />
+          </div>
+          <p className="truncate font-label-code-sm text-[10px] text-on-surface-variant">
+            {scan
+              ? `${
+                  scan.source === "github"
+                    ? (scan.repoFullName ?? "GitHub import")
+                    : "Local ZIP upload"
+                }${scan.branch ? ` · ${scan.branch}` : ""}`
+              : scanId
+                ? "Fetching scan metadata"
+                : "Upload or import a project to begin"}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-space-xs">
+        <div className="flex items-center gap-space-2xs rounded-lg bg-surface-container px-space-xs py-1 font-label-code-sm text-[11px] tracking-wider text-on-surface">
+          <Icon name="timer" className="text-[14px] text-primary-fixed-dim" />
+          {formatDuration(elapsed)}
+        </div>
+        {scanId ? (
+          <Link
+            href={`/scan/${scanId}`}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 font-label-code-sm text-[11px] font-bold transition-colors",
+              completed
+                ? "bg-tertiary-container text-on-tertiary shadow-[0_0_16px_rgba(0,249,130,0.3)] hover:bg-tertiary-fixed-dim"
+                : "border border-primary-container/30 bg-primary-container/10 text-primary hover:bg-primary-container/20",
+            )}
+          >
+            <Icon
+              name={completed ? "fact_check" : "visibility"}
+              className="text-[14px]"
+            />
+            {completed ? "View findings" : "Open dashboard"}
+          </Link>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ProgressPanel({
+  scan,
+  now,
+}: {
+  scan: ScanDetail | null;
+  now: number;
+}) {
+  const status = scan?.status ?? "ingested";
+  const percent = scanProgress(scan, now);
+  const elapsed = scanElapsedSeconds(scan, now);
+  const findings = scan?.findings.length ?? 0;
+
+  const label =
+    status === "scanning"
+      ? "Running Semgrep AST analysis"
+      : status === "completed"
+        ? findings > 0
+          ? "Audit complete — findings ready"
+          : "Audit complete — no findings"
+        : status === "failed"
+          ? "Scan failed"
+          : "Preparing scan workspace";
+
+  const icon =
+    status === "scanning"
+      ? "sync"
+      : status === "completed"
+        ? "check_circle"
+        : status === "failed"
+          ? "error"
+          : "hourglass_top";
+
+  return (
+    <section className="glass-sheen relative w-full rounded-xl bg-surface-container/70 p-space-md shadow-xl backdrop-blur-xl">
+      <div className="flex flex-col justify-between gap-space-xs md:flex-row md:items-center">
+        <div className="flex min-w-0 items-center gap-space-sm">
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest">
+            <Icon
+              name={icon}
+              className={cn(
+                "text-[20px]",
+                status === "scanning"
+                  ? "animate-spin text-primary-container"
+                  : status === "completed"
+                    ? "text-tertiary-fixed"
+                    : status === "failed"
+                      ? "text-error"
+                      : "text-outline",
+              )}
+            />
+          </div>
+          <div className="flex min-w-0 flex-col">
+            <div className="flex flex-wrap items-center gap-space-xs">
+              <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-primary">
+                {percent}% Complete
+              </span>
+              <span className="font-label-code-md text-label-code-md text-outline-variant">
+                —
+              </span>
+              <span className="truncate font-headline-sm text-headline-sm font-semibold text-on-surface">
+                {label}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-space-xs font-label-code-sm text-label-code-sm text-on-surface-variant">
+              <span className="font-semibold text-primary-container">
+                {scan
+                  ? (scan.status === "completed" && scan.scannedFiles != null
+                      ? scan.scannedFiles
+                      : scan.fileCount
+                    ).toLocaleString()
+                  : "—"}
+              </span>
+              <span>
+                {scan?.status === "completed" && scan.scannedFiles != null
+                  ? "files analysed"
+                  : "files in scope"}
+              </span>
+              <span className="text-outline-variant">•</span>
+              <span className="text-tertiary-fixed">
+                {formatDuration(elapsed)} elapsed
+              </span>
+              {findings > 0 ? (
+                <>
+                  <span className="text-outline-variant">•</span>
+                  <span className="text-error">
+                    {findings} {findings === 1 ? "finding" : "findings"}
+                  </span>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-space-xs self-start md:self-auto">
+          <div className="flex items-center gap-space-2xs rounded bg-surface-container-lowest px-space-xs py-space-3xs font-label-code-sm text-label-code-sm text-on-surface-variant">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary-container" />
+            <span>{scan ? formatSize(scan.totalBytes) : "MEM —"}</span>
+          </div>
+          <div className="flex items-center gap-space-2xs rounded bg-surface-container-lowest px-space-xs py-space-3xs font-label-code-sm text-label-code-sm text-tertiary-fixed">
+            <Icon name="bolt" className="text-[14px]" />
+            <span>semgrep</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mt-space-xs h-2.5 w-full overflow-hidden rounded-full bg-surface-container-lowest">
+        <div
+          className={cn(
+            "relative h-full rounded-full transition-[width] duration-700",
+            status === "failed"
+              ? "bg-error"
+              : status === "completed"
+                ? "bg-tertiary-container"
+                : "bg-primary-container shadow-[0_0_16px_rgba(0,240,255,0.7)]",
+          )}
+          style={{ width: `${percent}%` }}
+        >
+          {status === "scanning" ? (
+            <div
+              className={cn(
+                "absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent",
+                styles.shimmer,
+              )}
+            />
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ScanSandbox({ scan }: { scan: ScanDetail | null }) {
+  const status = scan?.status ?? "ingested";
+  const findings = scan?.findings ?? [];
+  const top = findings.slice(0, 3);
+  const scanning = status === "scanning" || status === "ingested";
+  const clear = status === "completed" && findings.length === 0;
+
+  let badgeClass =
+    "bg-surface-container/70 text-on-surface shadow-[0_0_24px_rgba(0,240,255,0.2)]";
+  let iconName = "radar";
+  let iconClass = "text-primary-container";
+  let text = `Analysing ${scan ? scan.fileCount.toLocaleString() : "…"} files`;
+
+  if (status === "failed") {
+    badgeClass =
+      "bg-error-container/40 text-on-error-container shadow-[0_0_24px_rgba(255,46,91,0.35)]";
+    iconName = "error";
+    iconClass = "text-error";
+    text = "Scan failed";
+  } else if (clear) {
+    badgeClass =
+      "bg-tertiary-container/20 text-tertiary-fixed shadow-[0_0_24px_rgba(0,249,130,0.2)]";
+    iconName = "verified_user";
+    iconClass = "text-tertiary-fixed";
+    text = "No OWASP flaws identified";
+  } else if (!scanning) {
+    badgeClass =
+      "bg-error-container/40 text-on-error-container shadow-[0_0_24px_rgba(255,46,91,0.35)]";
+    iconName = "warning";
+    iconClass = "text-error";
+    text = `${findings.length} OWASP ${findings.length === 1 ? "flaw" : "flaws"} identified`;
+  }
+
+  return (
+    <section className="relative flex min-h-[420px] w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-surface-container/60 p-space-lg shadow-2xl backdrop-blur-2xl lg:p-space-xl">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-10"
@@ -275,144 +435,179 @@ function ScanSandbox() {
         }}
       />
 
-      <div className="z-20 mb-space-md flex items-center gap-space-xs rounded-full bg-error-container/40 px-space-md py-space-2xs shadow-[0_0_24px_rgba(255,46,91,0.35)] backdrop-blur-md">
+      <div
+        className={cn(
+          "z-20 mb-space-md flex items-center gap-space-xs rounded-full px-space-md py-space-2xs backdrop-blur-md",
+          badgeClass,
+        )}
+      >
         <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error opacity-75" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-error" />
+          <span
+            className={cn(
+              "absolute inline-flex h-full w-full rounded-full opacity-75",
+              scanning ? "animate-ping bg-primary-container" : "bg-current",
+            )}
+          />
+          <span
+            className={cn(
+              "relative inline-flex h-2.5 w-2.5 rounded-full",
+              status === "failed"
+                ? "bg-error"
+                : clear
+                  ? "bg-tertiary-container"
+                  : scanning
+                    ? "bg-primary-container"
+                    : "bg-error",
+            )}
+          />
         </span>
-        <Icon name="warning" className="text-[18px] text-error" />
-        <span className="font-label-code-md text-label-code-md font-semibold tracking-wider text-on-error-container">
-          2 OWASP Flaws Identified
+        <Icon name={iconName} className={cn("text-[18px]", iconClass)} />
+        <span className="font-label-code-md text-label-code-md font-semibold tracking-wider">
+          {text}
         </span>
       </div>
 
-      <div className="relative flex w-full max-w-[840px] flex-col items-center gap-space-md sm:block sm:h-[340px]">
-        {/* Mobile: stacked node badges */}
-        <div className="grid w-full grid-cols-2 gap-space-xs sm:hidden">
-          <NodeBadge
-            file="src/api/auth.ts"
-            icon="crisis_alert"
-            label="CWE-798 Hardcoded Key"
-            variant="vulnerable"
-          />
-          <NodeBadge
-            file="db/query.py"
-            icon="shield_with_heart"
-            label="CWE-89 SQL Injection"
-            variant="vulnerable"
-          />
-        </div>
-
-        {/* Connection vectors */}
-        <svg
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0 hidden h-full w-full sm:block"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="audit-cyan-line" x1="0%" x2="100%" y1="0%" y2="100%">
-              <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#7000ff" stopOpacity="0.1" />
-            </linearGradient>
-            <linearGradient
-              id="audit-crimson-left"
-              x1="0%"
-              x2="100%"
-              y1="0%"
-              y2="100%"
-            >
-              <stop offset="0%" stopColor="#ff3366" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#00f0ff" stopOpacity="0.2" />
-            </linearGradient>
-            <linearGradient
-              id="audit-crimson-right"
-              x1="100%"
-              x2="0%"
-              y1="0%"
-              y2="100%"
-            >
-              <stop offset="0%" stopColor="#ff3366" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#00f0ff" stopOpacity="0.2" />
-            </linearGradient>
-          </defs>
-          <line
-            className="animate-pulse"
-            x1="24"
-            y1="28"
-            x2="50"
-            y2="50"
-            stroke="url(#audit-crimson-left)"
-            strokeDasharray="4 4"
-            strokeWidth="1.5"
-            vectorEffect="non-scaling-stroke"
-          />
-          <line
-            className="animate-pulse"
-            x1="76"
-            y1="28"
-            x2="50"
-            y2="50"
-            stroke="url(#audit-crimson-right)"
-            strokeDasharray="4 4"
-            strokeWidth="1.5"
-            vectorEffect="non-scaling-stroke"
-          />
-          <line
-            x1="26"
-            y1="80"
-            x2="50"
-            y2="50"
-            stroke="url(#audit-cyan-line)"
-            strokeDasharray="3 3"
-            strokeWidth="1.5"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-
-        {/* Desktop: floating node badges */}
-        <div className="absolute -top-2 left-2 z-10 hidden w-[240px] sm:block md:left-6">
-          <NodeBadge
-            file="src/api/auth.ts"
-            icon="crisis_alert"
-            label="CWE-798 Hardcoded Key"
-            variant="vulnerable"
-          />
-        </div>
-        <div className="absolute -top-2 right-2 z-10 hidden w-[240px] sm:block md:right-6">
-          <NodeBadge
-            file="db/query.py"
-            icon="shield_with_heart"
-            label="CWE-89 SQL Injection"
-            variant="vulnerable"
-          />
-        </div>
-        <div className="absolute bottom-2 left-2 z-10 hidden w-[230px] sm:block md:left-8">
-          <NodeBadge
-            file="middleware.js"
-            icon="check_circle"
-            label="AST Validated • Clean"
-            variant="clean"
-          />
-        </div>
-
+      <div className="relative flex w-full max-w-[880px] flex-col items-center justify-center gap-space-md sm:flex-row">
         <RadarCore />
 
-        {/* Mobile: clean badge below the core */}
-        <div className="w-full max-w-[280px] sm:hidden">
-          <NodeBadge
-            file="middleware.js"
-            icon="check_circle"
-            label="AST Validated • Clean"
-            variant="clean"
-          />
+        <div className="grid w-full max-w-[420px] gap-space-xs">
+          {top.map((finding) => (
+            <FindingBadge key={finding.id} finding={finding} />
+          ))}
+
+          {top.length === 0 ? (
+            <div className="rounded-xl border border-glass-line/10 bg-surface-container-lowest/80 p-space-sm text-center">
+              <p className="font-label-code-md text-label-code-md font-semibold text-on-surface">
+                {status === "failed"
+                  ? "The scanner did not return a result"
+                  : scanning
+                    ? "Collecting findings…"
+                    : "No findings to display"}
+              </p>
+              <p className="mt-1 font-label-code-sm text-label-code-sm text-on-surface-variant">
+                {status === "failed"
+                  ? "Open the dashboard for the failure reason."
+                  : scanning
+                    ? "Real Semgrep results will appear here."
+                    : "Every rule in the active ruleset passed."}
+              </p>
+            </div>
+          ) : null}
+
+          {findings.length > top.length ? (
+            <p className="text-center font-label-code-sm text-[11px] text-outline">
+              +{(findings.length - top.length).toLocaleString()} more in the
+              code review dashboard
+            </p>
+          ) : null}
         </div>
       </div>
     </section>
   );
 }
 
-function LiveTerminal() {
+type TerminalEvent = {
+  key: string;
+  time: string;
+  tag: string;
+  tone: LogTone;
+  text: ReactNode;
+};
+
+function buildEvents(scan: ScanDetail | null): TerminalEvent[] {
+  if (!scan) {
+    return [
+      {
+        key: "waiting",
+        time: formatLogTime(null),
+        tag: "INFO",
+        tone: "info",
+        text: "Waiting for scan metadata…",
+      },
+    ];
+  }
+
+  const events: TerminalEvent[] = [
+    {
+      key: "created",
+      time: formatLogTime(scan.createdAt),
+      tag: "INFO",
+      tone: "info",
+      text: `${scan.projectName} ingested — ${scan.fileCount.toLocaleString()} files (${formatSize(
+        scan.totalBytes,
+      )}) via ${scan.source === "github" ? "GitHub import" : "ZIP upload"}.`,
+    },
+  ];
+
+  if (scan.startedAt) {
+    events.push({
+      key: "started",
+      time: formatLogTime(scan.startedAt),
+      tag: "INFO",
+      tone: "info",
+      text: "Scan claimed. Semgrep is running the AST + OWASP rules across the extracted project.",
+    });
+  }
+
+  for (const finding of scan.findings.slice(0, 8)) {
+    events.push({
+      key: `finding-${finding.id}`,
+      time: formatLogTime(scan.startedAt ?? scan.createdAt),
+      tag: finding.severity,
+      tone: finding.severity === "ERROR" ? "warn" : "audit",
+      text: (
+        <>
+          {finding.cwe ? `${finding.cwe} ` : ""}
+          {finding.message}{" "}
+          <code className="rounded bg-error-container/40 px-1 py-0.5 text-on-error-container">
+            {finding.filePath}:{finding.startLine}
+          </code>
+        </>
+      ),
+    });
+  }
+
+  scan.warnings.slice(0, 3).forEach((warning, index) => {
+    events.push({
+      key: `warning-${index}`,
+      time: formatLogTime(scan.completedAt ?? scan.startedAt),
+      tag: "WARN",
+      tone: "warn",
+      text: warning,
+    });
+  });
+
+  if (scan.status === "completed" && scan.completedAt) {
+    const seconds = scanElapsedSeconds(scan, Date.parse(scan.completedAt));
+    events.push({
+      key: "completed",
+      time: formatLogTime(scan.completedAt),
+      tag: "AUDIT",
+      tone: "audit",
+      text: `Scan completed in ${formatDuration(seconds)} — ${
+        scan.findings.length
+      } ${scan.findings.length === 1 ? "finding" : "findings"} across ${scan.fileCount.toLocaleString()} files.`,
+    });
+  }
+
+  if (scan.status === "failed") {
+    events.push({
+      key: "failed",
+      time: formatLogTime(scan.completedAt ?? scan.startedAt),
+      tag: "WARN",
+      tone: "warn",
+      text: `Scan failed: ${scan.error ?? "unknown error"}.`,
+    });
+  }
+
+  return events;
+}
+
+function LiveTerminal({ scan }: { scan: ScanDetail | null }) {
+  const events = useMemo(() => buildEvents(scan), [scan]);
+  const status = scan?.status ?? "ingested";
+  const active = status === "scanning" || status === "ingested";
+
   return (
     <section className="relative flex w-full flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-2xl">
       <div className="flex h-10 w-full items-center justify-between bg-surface-container-low/80 px-space-md backdrop-blur-md">
@@ -424,87 +619,133 @@ function LiveTerminal() {
         <div className="flex items-center gap-space-xs font-label-code-sm text-label-code-sm font-semibold tracking-wider text-on-surface-variant">
           <Icon name="terminal" className="text-[14px] text-primary-container" />
           <span className="hidden sm:inline">
-            LIVE SCAN TELEMETRY — semgrep-ast-daemon:v4.2
+            LIVE SCAN TELEMETRY — semgrep
           </span>
           <span className="sm:hidden">LIVE TELEMETRY</span>
         </div>
         <div className="flex items-center gap-space-2xs font-label-code-sm text-label-code-sm text-on-surface-variant">
-          <span className="h-1.5 w-1.5 animate-ping rounded-full bg-tertiary-fixed" />
-          <span>ONLINE</span>
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              status === "scanning"
+                ? "animate-ping bg-primary-container"
+                : status === "completed"
+                  ? "bg-tertiary-container"
+                  : status === "failed"
+                    ? "bg-error"
+                    : "bg-outline",
+            )}
+          />
+          <span>
+            {status === "scanning"
+              ? "LIVE"
+              : status === "completed"
+                ? "COMPLETE"
+                : status === "failed"
+                  ? "FAILED"
+                  : "QUEUED"}
+          </span>
         </div>
       </div>
 
-      <div className="flex max-h-56 flex-col gap-space-2xs overflow-y-auto p-space-md font-label-code-md text-label-code-md">
-        <LogLine time="10:42:01.104" tag="INFO" tone="info">
-          Tree-Sitter grammar loaded for .tsx, .py, .js (28 source files mapped)
-        </LogLine>
-        <LogLine time="10:42:01.320" tag="INFO" tone="info">
-          Parsing TypeScript / Python AST files across abstract callgraphs...
-        </LogLine>
-        <LogLine time="10:42:02.045" tag="WARN" tone="warn">
-          Hardcoded secret key found in client component:{" "}
-          <code className="rounded bg-error-container/40 px-1 py-0.5 text-on-error-container">
-            src/api/auth.ts:42 (CWE-798)
-          </code>
-        </LogLine>
-        <LogLine time="10:42:02.812" tag="LLM" tone="llm">
-          Evaluating authorization logic in user query &amp; sanitization
-          pipeline...
-        </LogLine>
-        <LogLine time="10:42:03.119" tag="WARN" tone="warn">
-          Unsanitized cursor concatenation detected:{" "}
-          <code className="rounded bg-error-container/40 px-1 py-0.5 text-on-error-container">
-            db/query.py:88 (CWE-89)
-          </code>
-        </LogLine>
-        <LogLine time="10:42:03.950" tag="AUDIT" tone="audit">
-          Cross-checking against OWASP Top 10 2025 ruleset &amp; CWE taxonomy...
-        </LogLine>
+      <div className="flex max-h-64 flex-col gap-space-2xs overflow-y-auto p-space-md font-label-code-md text-label-code-md">
+        {events.map((event) => (
+          <LogLine
+            key={event.key}
+            time={event.time}
+            tag={event.tag}
+            tone={event.tone}
+          >
+            {event.text}
+          </LogLine>
+        ))}
 
-        <div className="flex items-center gap-space-xs pt-space-2xs text-primary-container">
-          <span className="font-semibold text-primary">&gt;</span>
-          <span className="text-on-surface-variant">
-            Scanning sub-branches: auth/session_validator.ts
-          </span>
-          <span
-            className={cn(
-              "inline-block h-4 w-2 bg-primary-container",
-              styles.caret,
-            )}
-          />
-        </div>
+        {active ? (
+          <div className="flex items-center gap-space-xs pt-space-2xs text-primary-container">
+            <span className="font-semibold text-primary">&gt;</span>
+            <span className="text-on-surface-variant">
+              {status === "ingested"
+                ? "Claiming scan and starting the engine"
+                : "Scanning files and cross-checking OWASP rules"}
+            </span>
+            <span
+              className={cn(
+                "inline-block h-4 w-2 bg-primary-container",
+                styles.caret,
+              )}
+            />
+          </div>
+        ) : null}
       </div>
     </section>
   );
 }
 
-/**
- * Standalone, purely presentational Active Security Audit screen.
- * Intentionally not linked to the ingestion or landing screens.
- */
+function EmptyState({
+  title,
+  description,
+  href,
+  label,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  label: string;
+}) {
+  return (
+    <section className="flex min-h-[420px] flex-col items-center justify-center gap-space-sm rounded-xl border border-glass-line/10 bg-surface-container/60 p-space-xl text-center">
+      <Icon name="radar" className="text-[56px] text-outline" />
+      <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
+        {title}
+      </h1>
+      <p className="max-w-md font-body-md text-body-md text-on-surface-variant">
+        {description}
+      </p>
+      <Link
+        href={href}
+        className="mt-space-xs inline-flex items-center gap-1.5 rounded-lg bg-primary-container px-space-md py-space-xs font-label-code-md text-label-code-md font-bold text-on-primary transition-colors hover:bg-primary-fixed-dim"
+      >
+        <Icon name="arrow_back" className="text-[16px]" />
+        {label}
+      </Link>
+    </section>
+  );
+}
+
 export function SecurityAuditScreen() {
-  const [nodes, setNodes] = useState(START_NODES);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const scanId = searchParams.get("scan");
+  const identity = useAuthIdentity();
+  const { scan, error, notFound } = useScan(scanId);
+
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const id = window.setInterval(() => {
-      setNodes((current) =>
-        current >= PEAK_NODES
-          ? current
-          : Math.min(
-              current + Math.floor(Math.random() * 24) + 8,
-              PEAK_NODES,
-            ),
-      );
-    }, 350);
-
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
 
+  const status = scan?.status ?? "ingested";
+  const terminal = status === "completed" || status === "failed";
+
+  // The audit screen is a waypoint: once the engine finishes, move to the
+  // full dashboard. The link in the scan bar also works immediately.
+  useEffect(() => {
+    if (!scan || !terminal) return;
+    const timer = window.setTimeout(() => {
+      router.replace(`/scan/${scan.scanId}`);
+    }, 1600);
+    return () => window.clearTimeout(timer);
+  }, [scan, terminal, router]);
+
   return (
     <div className="flex min-h-screen flex-col bg-surface-container-lowest">
-      <ScanningHeader />
+      <WorkspaceHeader
+        status={identity.status}
+        provider={identity.provider}
+        user={identity.user}
+      />
 
       <main className="relative w-full flex-1 overflow-hidden pt-16">
         <h1 className="sr-only">Active Security Audit</h1>
@@ -521,26 +762,69 @@ export function SecurityAuditScreen() {
           className="pointer-events-none absolute right-1/4 top-52 h-[380px] w-[380px] rounded-full bg-error-container/20 blur-[110px]"
         />
 
-        <div className="page-container relative flex flex-col gap-space-lg py-space-md lg:py-space-lg">
-          <ProgressPanel nodes={nodes} />
-          <ScanSandbox />
-          <LiveTerminal />
+        <div className="page-container relative flex flex-col gap-space-md py-space-md lg:py-space-lg">
+          <AuditBar scan={scan} scanId={scanId} now={now} />
+
+          {!scanId ? (
+            <EmptyState
+              title="No scan selected"
+              description="Start a new audit by uploading a project archive or importing a GitHub repository, then this screen will follow the real scan."
+              href="/code-ingestion"
+              label="Start a new scan"
+            />
+          ) : notFound ? (
+            <EmptyState
+              title="Scan not found"
+              description={
+                error ??
+                "This scan does not exist, or it belongs to another account."
+              }
+              href="/code-ingestion"
+              label="Start a new scan"
+            />
+          ) : (
+            <>
+              {error && !scan ? (
+                <div
+                  role="status"
+                  className="rounded-lg border border-alert-amber/20 bg-alert-amber/10 px-space-sm py-2 text-center font-label-code-sm text-[11px] text-alert-amber"
+                >
+                  Could not load scan: {error} — retrying…
+                </div>
+              ) : null}
+
+              {error && scan ? (
+                <div
+                  role="status"
+                  className="rounded-lg border border-alert-amber/20 bg-alert-amber/10 px-space-sm py-2 text-center font-label-code-sm text-[11px] text-alert-amber"
+                >
+                  {error} — retrying…
+                </div>
+              ) : null}
+
+              {status === "failed" ? (
+                <div
+                  role="alert"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-error/20 bg-error-container/20 px-space-sm py-2 text-center font-label-code-sm text-[11px] text-error"
+                >
+                  <Icon name="error" className="text-[14px]" />
+                  <span>
+                    Scan failed
+                    {scan?.error ? `: ${scan.error}` : "."} Opening the
+                    dashboard…
+                  </span>
+                </div>
+              ) : null}
+
+              <ProgressPanel scan={scan} now={now} />
+              <ScanSandbox scan={scan} />
+              <LiveTerminal scan={scan} />
+            </>
+          )}
         </div>
       </main>
 
-      <footer className="w-full bg-surface-container-lowest/90 py-space-lg shadow-[0_-1px_8px_rgba(0,0,0,0.04)]">
-        <div className="page-container flex flex-col gap-space-2xs font-label-code-sm text-label-code-sm text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            ENGINE STATUS:{" "}
-            <span className="font-semibold text-tertiary-fixed">
-              SECURE ENCLAVE 04
-            </span>
-          </div>
-          <div className="text-outline">
-            RESILCODE REALTIME RUNTIME v3.4.1 • SOC2 COMPLIANT
-          </div>
-        </div>
-      </footer>
+      <WorkspaceFooter />
     </div>
   );
 }

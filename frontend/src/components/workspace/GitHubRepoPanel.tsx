@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/Icon";
 import {
@@ -32,6 +33,7 @@ export function GitHubRepoPanel({
   accountId,
   onViewerLoaded,
 }: GitHubRepoPanelProps) {
+  const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -212,6 +214,8 @@ export function GitHubRepoPanel({
       const data = await importRepo(selectedRepo, branch);
       setImportResult(data);
       setImportStatus("done");
+      // Hand the extracted repository to the audit screen, which starts the scan.
+      router.push(`/security-audit?scan=${encodeURIComponent(data.scanId)}`);
     } catch (error) {
       setImportStatus("idle");
       setImportError(

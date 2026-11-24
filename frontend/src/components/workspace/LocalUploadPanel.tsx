@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { formatSize } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
@@ -28,6 +29,7 @@ async function validateZip(file: File): Promise<string | null> {
 }
 
 export function LocalUploadPanel() {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -71,6 +73,8 @@ export function LocalUploadPanel() {
       const data = await uploadProject(file);
       setResult(data);
       setStatus("done");
+      // Hand the extracted project to the audit screen, which starts the scan.
+      router.push(`/security-audit?scan=${encodeURIComponent(data.scanId)}`);
     } catch (uploadError) {
       setStatus("idle");
       setError(

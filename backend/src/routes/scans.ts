@@ -110,8 +110,8 @@ async function readCapped(
 }
 
 scansRouter.post(
-  "/upload",
-  requireSession,
+  "/upload", // api/scans/upload
+  requireSession, // middleware
   upload.single("file"),
   async (req, res) => {
     if (!req.file)

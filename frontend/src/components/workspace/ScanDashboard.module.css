@@ -1,0 +1,52 @@
+/* Scoped motion for the code review dashboard. */
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.45),
+    transparent
+  );
+  animation: scan-dashboard-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes scan-dashboard-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.liveDot {
+  animation: scan-dashboard-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes scan-dashboard-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after,
+  .liveDot {
+    animation: none;
+  }
+}

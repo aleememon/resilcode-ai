@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
 import { formatSize } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
@@ -13,6 +13,8 @@ type TreeNode = {
   size: number;
   /** Number of files contained in the node (1 for a file). */
   fileCount: number;
+  /** Number of findings in the node and, for folders, all of its children. */
+  findings: number;
   children: TreeNode[];
 };
 
@@ -25,6 +27,7 @@ function buildTree(entries: FileTreeEntry[]): TreeNode[] {
     path: "",
     size: 0,
     fileCount: 0,
+    findings: 0,
     children: [],
   };
 
@@ -46,6 +49,7 @@ function buildTree(entries: FileTreeEntry[]): TreeNode[] {
           path: currentPath,
           size: 0,
           fileCount: 0,
+          findings: 0,
           children: [],
         };
         parent.children.push(dir);
@@ -59,6 +63,7 @@ function buildTree(entries: FileTreeEntry[]): TreeNode[] {
       path: currentPath ? `${currentPath}/${name}` : name,
       size: entry.size,
       fileCount: 1,
+      findings: 0,
       children: [],
     });
   }
@@ -76,20 +81,30 @@ function sortTree(nodes: TreeNode[]) {
   for (const node of nodes) sortTree(node.children);
 }
 
-/** Post-order pass that fills directory file counts (and dir byte sizes). */
-function summarize(node: TreeNode): number {
+/**
+ * Post-order pass that fills directory file counts, byte sizes, and finding
+ * counts. Leaves take their finding count from `findingCounts`.
+ */
+function summarize(
+  node: TreeNode,
+  findingCounts: Record<string, number>,
+): number {
   if (node.children.length === 0) {
     node.fileCount = 1;
+    node.findings = findingCounts[node.path] ?? 0;
     return 1;
   }
   let total = 0;
   let bytes = 0;
+  let findings = 0;
   for (const child of node.children) {
-    total += summarize(child);
+    total += summarize(child, findingCounts);
     bytes += child.size;
+    findings += child.findings;
   }
   node.fileCount = total;
   node.size = bytes;
+  node.findings = findings;
   return total;
 }
 
@@ -102,34 +117,98 @@ function collectDirs(nodes: TreeNode[], into: Set<string>) {
   }
 }
 
+/** Folder paths that must be open for `filePath` to be visible. */
+function ancestorDirs(filePath: string): string[] {
+  const parts = filePath.split("/").filter(Boolean);
+  const dirs: string[] = [];
+  let current = "";
+  for (let index = 0; index < parts.length - 1; index += 1) {
+    current = current ? `${current}/${parts[index]}` : parts[index];
+    dirs.push(current);
+  }
+  return dirs;
+}
+
 type TreeRowProps = {
   node: TreeNode;
   depth: number;
   collapsed: Set<string>;
   onToggle: (path: string) => void;
+  onFileSelect?: (path: string) => void;
+  selectedPath?: string | null;
+  showSize: boolean;
 };
 
-function TreeRow({ node, depth, collapsed, onToggle }: TreeRowProps) {
+function TreeRow({
+  node,
+  depth,
+  collapsed,
+  onToggle,
+  onFileSelect,
+  selectedPath,
+  showSize,
+}: TreeRowProps) {
   const isDir = node.children.length > 0;
   const isOpen = !collapsed.has(node.path);
   const indent = { paddingLeft: `${depth * 14 + 4}px` };
 
   if (!isDir) {
-    return (
-      <li>
-        <div
-          className="flex items-center gap-space-3xs rounded py-[3px] pr-space-2xs text-on-surface-variant"
-          style={indent}
-        >
-          <Icon
-            name="description"
-            className="shrink-0 text-[15px] text-outline"
-          />
-          <span className="truncate">{node.name}</span>
+    const selected = selectedPath === node.path;
+    const hasFindings = node.findings > 0;
+
+    const content = (
+      <>
+        <Icon
+          name={hasFindings ? "bug_report" : "description"}
+          className={cn(
+            "shrink-0 text-[15px]",
+            hasFindings ? "text-error" : "text-outline",
+          )}
+        />
+        <span className={cn("truncate", selected && "font-semibold")}>
+          {node.name}
+        </span>
+        {hasFindings ? (
+          <span className="ml-auto shrink-0 rounded bg-error-container/40 px-1 font-semibold text-error">
+            {node.findings}
+          </span>
+        ) : showSize ? (
           <span className="ml-auto shrink-0 pl-space-xs text-outline">
             {formatSize(node.size)}
           </span>
-        </div>
+        ) : null}
+      </>
+    );
+
+    if (!onFileSelect) {
+      return (
+        <li>
+          <div
+            className="flex items-center gap-space-3xs rounded py-[3px] pr-space-2xs text-on-surface-variant"
+            style={indent}
+          >
+            {content}
+          </div>
+        </li>
+      );
+    }
+
+    return (
+      <li>
+        <button
+          type="button"
+          onClick={() => onFileSelect(node.path)}
+          aria-current={selected ? "true" : undefined}
+          className={cn(
+            "flex w-full items-center gap-space-3xs rounded py-[3px] pr-space-2xs text-left transition-colors",
+            selected
+              ? "bg-primary-container/10 text-primary ring-1 ring-inset ring-primary-container/30"
+              : "text-on-surface-variant hover:bg-surface-container-high",
+          )}
+          style={indent}
+        >
+          {content}
+        </button>
       </li>
     );
   }
@@ -148,10 +227,16 @@ function TreeRow({ node, depth, collapsed, onToggle }: TreeRowProps) {
           className="shrink-0 text-[15px] text-primary-container"
         />
         <span className="truncate font-semibold">{node.name}</span>
-        <span className="ml-auto shrink-0 pl-space-xs text-outline">
-          {node.fileCount.toLocaleString()}{" "}
-          {node.fileCount === 1 ? "file" : "files"}
-        </span>
+        {node.findings > 0 ? (
+          <span className="ml-auto shrink-0 rounded bg-error-container/40 px-1 font-semibold text-error">
+            {node.findings}
+          </span>
+        ) : showSize ? (
+          <span className="ml-auto shrink-0 pl-space-xs text-outline">
+            {node.fileCount.toLocaleString()}{" "}
+            {node.fileCount === 1 ? "file" : "files"}
+          </span>
+        ) : null}
         <Icon
           name={isOpen ? "expand_more" : "chevron_right"}
           className="shrink-0 text-[15px] text-outline"
@@ -167,6 +252,9 @@ function TreeRow({ node, depth, collapsed, onToggle }: TreeRowProps) {
               depth={depth + 1}
               collapsed={collapsed}
               onToggle={onToggle}
+              onFileSelect={onFileSelect}
+              selectedPath={selectedPath}
+              showSize={showSize}
             />
           ))}
         </ul>
@@ -178,25 +266,66 @@ function TreeRow({ node, depth, collapsed, onToggle }: TreeRowProps) {
 type FileTreeProps = {
   files: FileTreeEntry[];
   className?: string;
+  /** File path → number of findings. Folders aggregate their children. */
+  findingCounts?: Record<string, number>;
+  /** Highlighted file. Changing it opens its ancestor folders. */
+  selectedPath?: string | null;
+  /** When provided, file rows become buttons that call this on click. */
+  onFileSelect?: (path: string) => void;
+  /** Hide per-file byte sizes (useful when the tree only lists findings). */
+  showSize?: boolean;
+  ariaLabel?: string;
 };
 
 /**
- * Renders the flat `files[]` list returned by the scan endpoints as a nested,
- * collapsible folder tree. Shared by the upload and GitHub import panels.
+ * Renders a flat `files[]` list as a nested, collapsible folder tree. Shared by
+ * the upload/import panels and the code review dashboard.
  */
-export function FileTree({ files, className }: FileTreeProps) {
+export function FileTree({
+  files,
+  className,
+  findingCounts,
+  selectedPath,
+  onFileSelect,
+  showSize = true,
+  ariaLabel = "Ingested files",
+}: FileTreeProps) {
   const tree = useMemo(() => {
     const nodes = buildTree(files);
     sortTree(nodes);
-    for (const node of nodes) summarize(node);
+    for (const node of nodes) summarize(node, findingCounts ?? {});
     return nodes;
-  }, [files]);
+  }, [files, findingCounts]);
 
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
     const initial = new Set<string>();
     if (files.length > AUTO_COLLAPSE_THRESHOLD) collectDirs(tree, initial);
     return initial;
   });
+
+  // Keep folders with findings (and the selected file) open as data arrives.
+  const revealPaths = useMemo(() => {
+    const paths = new Set<string>();
+    for (const [path, count] of Object.entries(findingCounts ?? {})) {
+      if (count > 0) for (const dir of ancestorDirs(path)) paths.add(dir);
+    }
+    if (selectedPath) {
+      for (const dir of ancestorDirs(selectedPath)) paths.add(dir);
+    }
+    return Array.from(paths).sort().join("|");
+  }, [findingCounts, selectedPath]);
+
+  useEffect(() => {
+    if (!revealPaths) return;
+    setCollapsed((previous) => {
+      let changed = false;
+      const next = new Set(previous);
+      for (const path of revealPaths.split("|")) {
+        if (next.delete(path)) changed = true;
+      }
+      return changed ? next : previous;
+    });
+  }, [revealPaths]);
 
   const toggle = (path: string) => {
     setCollapsed((previous) => {
@@ -228,7 +357,7 @@ export function FileTree({ files, className }: FileTreeProps) {
       )}
     >
       <ul
-        aria-label="Ingested files"
+        aria-label={ariaLabel}
         className="max-h-64 overflow-y-auto font-label-code-sm text-label-code-sm"
       >
         {tree.map((node) => (
@@ -238,6 +367,9 @@ export function FileTree({ files, className }: FileTreeProps) {
             depth={0}
             collapsed={collapsed}
             onToggle={toggle}
+            onFileSelect={onFileSelect}
+            selectedPath={selectedPath}
+            showSize={showSize}
           />
         ))}
       </ul>
