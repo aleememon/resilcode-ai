@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "OWASP Scope", href: "#owasp-scope" },
-  { label: "Docs", href: "#docs" },
+
 ];
 
 export function SiteHeader() {
